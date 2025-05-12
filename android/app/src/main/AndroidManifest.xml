@@ -1,16 +1,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.eclapp"> <!-- Add your package name here -->
+    package="com.example.eclapp">
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- Media permissions - optimized for all Android versions -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- For Android 10-12 (automatically ignored on Android 13+) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- Remove duplicate READ_MEDIA_IMAGES permission -->
+    <!-- Remove WRITE_EXTERNAL_STORAGE unless specifically needed -->
 
     <!-- Declare telephony feature as not required -->
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
@@ -21,12 +29,11 @@
         android:icon="@mipmap/ic_launcher"
         tools:replace="android:label">
 
-        <!-- ExpressPay Activity Fix for Android 12+ -->
+        <!-- ExpressPay Activity -->
         <activity
             android:name="com.expresspaygh.api.ExpressPayBrowserSwitchActivity"
             android:exported="true"
             tools:node="merge">
-
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -82,5 +89,4 @@
             <data android:scheme="https" />
         </intent>
     </queries>
-
 </manifest>

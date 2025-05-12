@@ -226,24 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                           ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              height: 28,
-                              width: 28,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: primaryColor, width: 2),
-                              ),
-                              child: Icon(
-                                Icons.edit,
-                                size: 16,
-                                color: primaryColor,
-                              ),
-                            ),
-                          ),
+
                         ],
                       ),
                       const SizedBox(width: 20),

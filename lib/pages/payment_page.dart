@@ -44,11 +44,6 @@ class _PaymentPageState extends State<PaymentPage> {
     },
   ];
 
-
-
-
-
-
   @override
   void initState() {
     super.initState();
@@ -87,19 +82,17 @@ class _PaymentPageState extends State<PaymentPage> {
     }
   }
 
-
   Future<void> _loadUserData() async {
     final secureStorage = const FlutterSecureStorage();
 
     try {
-
-      String? name = await secureStorage.read(key: 'user_name') ??
+      String? name = await secureStorage.read(key: 'userName') ??
           await secureStorage.read(key: 'userName');  // Try both possible keys
 
-      String? email = await secureStorage.read(key: 'user_email') ??
+      String? email = await secureStorage.read(key: 'userEmail') ??
           await secureStorage.read(key: 'userEmail');
 
-      String? phoneNumber = await secureStorage.read(key: 'user_phone') ??
+      String? phoneNumber = await secureStorage.read(key: 'userPhoneNumber') ??
           await secureStorage.read(key: 'userPhoneNumber') ??
           await secureStorage.read(key: 'userPhone');
 
@@ -157,9 +150,6 @@ class _PaymentPageState extends State<PaymentPage> {
     }
   }
 
-
-
-
   void queryPayment(String token) {
     expressPayApi.setQueryCompletionListener((paymentSuccessful, jsonObject, message) {
       if (paymentSuccessful) {
@@ -180,8 +170,6 @@ class _PaymentPageState extends State<PaymentPage> {
     expressPayApi.query(token);
   }
 
-
-
   void displayDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -200,7 +188,6 @@ class _PaymentPageState extends State<PaymentPage> {
       },
     );
   }
-
 
   Future<void> processPayment(CartProvider cart) async {
     setState(() => _isProcessingPayment = true);
@@ -231,8 +218,10 @@ class _PaymentPageState extends State<PaymentPage> {
       'amount': total.toStringAsFixed(2),
       'order_desc': orderDesc,
       'user_name': _userEmail,
-      'first_name': _userName,
-      'last_name': _userName,
+      'first_name': _userName.split(' ').first,
+      'last_name': _userName.split(' ').length > 1
+          ? _userName.split(' ').sublist(1).join(' ')
+          : 'Customer',
       'email': _userEmail,
       'phone_number': _phoneNumber,
       'account_number': _phoneNumber,
@@ -262,12 +251,6 @@ class _PaymentPageState extends State<PaymentPage> {
       setState(() => _isProcessingPayment = false);
     }
   }
-
-
-
-
-
-
 
   Future<void> _launchCheckoutUrl(String url) async {
     if (await canLaunchUrl(Uri.parse(url))) {
@@ -304,31 +287,30 @@ class _PaymentPageState extends State<PaymentPage> {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.all(5),
                       child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           _buildPaymentMethods(),
-                      const SizedBox(height: 20),
-                      _buildSavePaymentToggle(),
-                      const SizedBox(height: 20),
-                      _buildOrderSummary(cart),
-                      const SizedBox(height: 30),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                          ),
-                          onPressed: _isProcessingPayment ? null : () => processPayment(cart),
-                          child: _isProcessingPayment
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text(
-                            'CONTINUE TO PAYMENT',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-
-                      )],
+                          const SizedBox(height: 20),
+                          _buildSavePaymentToggle(),
+                          const SizedBox(height: 20),
+                          _buildOrderSummary(cart),
+                          const SizedBox(height: 30),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              onPressed: _isProcessingPayment ? null : () => processPayment(cart),
+                              child: _isProcessingPayment
+                                  ? const CircularProgressIndicator(color: Colors.white)
+                                  : const Text(
+                                'CONTINUE TO PAYMENT',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          )],
                       ),
                     );
                   },
@@ -354,33 +336,48 @@ class _PaymentPageState extends State<PaymentPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildProgressStep("Delivery", isActive: false),
+          _buildProgressStep("Delivery", isActive: false, onTap: () {
+            // Navigate back to delivery page if it exists in your flow
+            Navigator.pop(context);
+          }),
           _buildArrow(),
           _buildProgressStep("Payment", isActive: true),
           _buildArrow(),
-          _buildProgressStep("Confirmation", isActive: false),
+          _buildProgressStep("Confirmation", isActive: false, onTap: () {
+            // Only allow navigation if payment is complete
+            if (!_isProcessingPayment) {
+              // This would typically be enabled after payment is complete
+              // For now, just show a message
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Complete payment first')),
+              );
+            }
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildProgressStep(String text, {bool isActive = false}) {
-    return Column(
-      children: [
-        Text(
-          text,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.grey,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+  Widget _buildProgressStep(String text, {bool isActive = false, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            text,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.grey,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          height: 2,
-          width: 50,
-          color: isActive ? Colors.white : Colors.grey[300],
-        ),
-      ],
+          const SizedBox(height: 4),
+          Container(
+            height: 2,
+            width: 50,
+            color: isActive ? Colors.white : Colors.grey,
+          ),
+        ],
+      ),
     );
   }
 
@@ -388,7 +385,7 @@ class _PaymentPageState extends State<PaymentPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Icon(
-        Icons.arrow_forward,
+        Icons.label_outline,
         color: Colors.grey[400],
         size: 20,
       ),
@@ -514,8 +511,6 @@ class _PaymentPageState extends State<PaymentPage> {
     );
   }
 }
-
-
 
 class OrderConfirmationPage extends StatelessWidget {
   const OrderConfirmationPage({Key? key}) : super(key: key);

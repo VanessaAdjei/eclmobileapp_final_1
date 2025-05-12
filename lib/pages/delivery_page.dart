@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:eclapp/pages/payment_page.dart';
 import 'package:eclapp/pages/savedaddresses.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +35,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
   String? selectedRegion;
   String? selectedCity;
   List<String> availableStations = [];
+  String _selectedCountryCode = 'GH';
+  String _countryDialCode = '+233';
 
   @override
   void dispose() {
@@ -62,6 +63,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
       return 20.00;
     }
   }
+
+
 
   Future<void> _searchAddress(String address) async {
     if (!mounted) return;
@@ -270,19 +273,54 @@ class _DeliveryPageState extends State<DeliveryPage> {
         children: [
           _buildProgressStep("Delivery", isActive: true),
           _buildArrow(),
-          _buildProgressStep("Payment", isActive: false),
+          _buildProgressStep("Payment", isActive: false, onTap: () {
+
+            if (deliveryOption == 'Delivery' && selectedAddress == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Please select a delivery address first')),
+              );
+              return;
+            }
+
+            if (deliveryOption == 'Pickup' && selectedAddress == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Please select a pickup location first')),
+              );
+              return;
+            }
+
+            if (_phoneController.text.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Please enter your phone number first')),
+              );
+              return;
+            }
+
+            // If all validations pass, navigate to payment page
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentPage(),
+              ),
+            );
+          }),
           _buildArrow(),
-          _buildProgressStep("Confirmation", isActive: false),
+          _buildProgressStep("Confirmation", isActive: false, onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Complete the current step first')),
+            );
+          }),
         ],
       ),
     );
   }
 
+
   Widget _buildArrow() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Icon(
-        Icons.arrow_forward,
+        Icons.label_outline,
         color: Colors.grey[400],
         size: 20,
       ),
@@ -290,25 +328,29 @@ class _DeliveryPageState extends State<DeliveryPage> {
   }
 
 
-  Widget _buildProgressStep(String text, {bool isActive = false}) {
-    return Column(
-      children: [
-        Text(
-          text,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.grey,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+  Widget _buildProgressStep(String text, {bool isActive = false, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            text,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.grey,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          height: 2,
-          width: 50,
-          color: isActive ? Colors.green : Colors.grey[300],
-        ),
-      ],
+          const SizedBox(height: 4),
+          Container(
+            height: 2,
+            width: 50,
+            color: isActive ? Colors.white : Colors.grey,
+          ),
+        ],
+      ),
     );
   }
+
 
   Widget _buildDeliveryOptions() {
     return Column(
@@ -691,15 +733,28 @@ class _DeliveryPageState extends State<DeliveryPage> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 12),
+
+
+
           TextField(
             controller: _phoneController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Phone Number',
-              border: OutlineInputBorder(),
-              prefixText: '+233 ',
+              border: const OutlineInputBorder(),
+              prefixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text('🇬🇭', style: TextStyle(fontSize: 24)),
+                  ),
+                  Text('+233 ', style: TextStyle(fontSize: 16)),
+                  SizedBox(width: 8),
+                ],
+              ),
             ),
             keyboardType: TextInputType.phone,
-          ),
+          )
         ],
       ),
     );

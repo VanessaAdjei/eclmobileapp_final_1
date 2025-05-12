@@ -4,6 +4,7 @@ class CartItem {
   final double price;
   int quantity;
   final String image;
+  final DateTime? purchaseDate;
 
   CartItem({
     required this.id,
@@ -11,6 +12,7 @@ class CartItem {
     required this.price,
     this.quantity = 1,
     required this.image,
+    this.purchaseDate,
   });
 
   double get totalPrice => price * quantity;

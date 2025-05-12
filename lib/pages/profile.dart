@@ -215,7 +215,7 @@ class _ProfileState extends State<Profile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Header with background design
+
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -259,30 +259,7 @@ class _ProfileState extends State<Profile> {
                         ),
                       ),
                       // Edit Button
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          height: 36,
-                          width: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.camera_alt,
-                            size: 20,
-                            color: primaryColor,
-                          ),
-                        ),
-                      ),
+
                     ],
                   ),
                   const SizedBox(height: 16),

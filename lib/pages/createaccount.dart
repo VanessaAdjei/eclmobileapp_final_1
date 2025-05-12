@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'otp.dart';
 import 'signinpage.dart';
+import 'package:flutter/services.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -165,7 +166,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your phone number';
                       }
+                      if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                        return 'Enter a valid 10-digit Ghanaian number (e.g., +233XXXXXXXXX)';
+                      }
                       return null;
+                    },
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[\d+]')),
+                      LengthLimitingTextInputFormatter(13), // +233 + 10 digits
+                    ],
+                    prefixText: '+233 ',
+                    onChanged: (value) {
+
                     },
                   ),
 
@@ -342,15 +354,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
       TextEditingController controller, {
         TextInputType? keyboardType,
         String? Function(String?)? validator,
+        List<TextInputFormatter>? inputFormatters,
+        String? prefixText,
+        void Function(String)? onChanged,
       }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      inputFormatters: inputFormatters,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey.shade600),
         prefixIcon: Icon(icon, color: Colors.green.shade600),
+        prefixText: prefixText,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300),
@@ -409,4 +427,5 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
+
 }

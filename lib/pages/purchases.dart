@@ -1,197 +1,323 @@
-import 'package:eclapp/pages/profile.dart';
-import 'package:eclapp/pages/storelocation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
 import 'Cart.dart';
+import 'CartItem.dart';
+import 'bottomnav.dart';
 import 'cartprovider.dart';
-import 'categories.dart';
-import 'homepage.dart';
+
 
 class PurchaseScreen extends StatefulWidget {
-
   const PurchaseScreen({Key? key}) : super(key: key);
 
   @override
   _PurchaseScreenState createState() => _PurchaseScreenState();
 }
 
-
 class _PurchaseScreenState extends State<PurchaseScreen> {
-  int _selectedIndex = 3;
+  bool _isGridView = false;
 
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    switch (index) {
-      case 0:
-        Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
-        break;
-      case 1:
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const Cart()));
-        break;
-      case 2:
-        Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryPage()));
-        break;
-      case 3:
-        Navigator.push(context, MaterialPageRoute(builder: (context) => Profile()));
-        break;
-      case 4:
-        Navigator.push(context, MaterialPageRoute(builder: (context) => StoreSelectionPage()));
-        break;
-    }
+  Widget _buildProductCard(CartItem cartItem) {
+    return Animate(
+      effects: [
+        FadeEffect(duration: 300.ms),
+        ScaleEffect(duration: 300.ms, begin: const Offset(0.9, 0.9), end: const Offset(1, 1))
+      ],
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            )
+          ],
+        ),
+        child: _buildListCard(cartItem),
+      ),
+    );
   }
 
+  Widget _buildGridCard(CartItem cartItem) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Image Section
+        Expanded(
+          flex: 3,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              image: DecorationImage(
+                image: NetworkImage(cartItem.image),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'Qty: ${cartItem.quantity}',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
 
+        // Details Section
+        Expanded(
+          flex: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  cartItem.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[700],
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${cartItem.price} GHS',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.teal[700],
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today,
+                            size: 14,
+                            color: Colors.grey[600]),
+                        SizedBox(width: 4),
+                        Text(
+                          cartItem.purchaseDate != null
+                              ? DateFormat('dd MMM').format(cartItem.purchaseDate!)
+                              : 'N/A',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildListCard(CartItem cartItem) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+        children: [
+          // Image
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              image: DecorationImage(
+                image: NetworkImage(cartItem.image),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
 
+          // Details
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    cartItem.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[700],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${cartItem.price} GHS',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.teal[700],
+                        ),
+                      ),
+                      Text(
+                        'Qty: ${cartItem.quantity}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today,
+                          size: 14,
+                          color: Colors.grey[600]),
+                      SizedBox(width: 4),
+                      Text(
+                        cartItem.purchaseDate != null
+                            ? DateFormat('dd MMM yyyy').format(cartItem.purchaseDate!)
+                            : 'Purchase Date Unavailable',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: Colors.green.shade700,
+        backgroundColor: Colors.green,
         elevation: 0,
-        centerTitle: true,
-        leading: Container(
-          margin: EdgeInsets.all(8.0),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.green[400],
-          ),
-          child: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ),
         title: Text(
           'Your Purchases',
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
-          Container(
-            margin: EdgeInsets.only(right: 8.0),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.green[700],
-
+          IconButton(
+            icon: Icon(
+              _isGridView ? Icons.list : Icons.grid_view,
+              color: Colors.white,
             ),
-            child:          IconButton(
-              icon: Icon(Icons.shopping_cart, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const Cart(),
-                  ),
-                );
-              },
-            ),
+            onPressed: () {
+              setState(() {
+                _isGridView = !_isGridView;
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.shopping_cart, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const Cart()),
+              );
+            },
           ),
         ],
       ),
-
       body: cart.purchasedItems.isEmpty
           ? Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.grey),
+            Icon(
+              Icons.shopping_bag_outlined,
+              size: 100,
+              color: Colors.green[700],
+            ),
+            SizedBox(height: 20),
+            Text(
+              'No Purchases Yet',
+              style: TextStyle(
+                fontSize: 22,
+                color: Colors.green[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             SizedBox(height: 10),
             Text(
-              'No purchases yet',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
+              'Start shopping to see your purchases here',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
             ),
           ],
         ),
       )
-          : Padding(
-        padding: EdgeInsets.all(10),
-        child: ListView.builder(
+          : Animate(
+        effects: [
+          FadeEffect(duration: 300.ms),
+        ],
+        child: _isGridView
+            ? GridView.builder(
+          padding: EdgeInsets.all(12),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
           itemCount: cart.purchasedItems.length,
           itemBuilder: (context, index) {
-            final item = cart.purchasedItems[index];
-            return Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: EdgeInsets.symmetric(vertical: 8),
-              child: ListTile(
-                contentPadding: EdgeInsets.all(10),
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    item.image,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                title: Text(
-                  item.name,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  '₵${item.price} x ${item.quantity}',
-                  style: TextStyle(color: Colors.grey.shade700),
-                ),
-                trailing: Text(
-                  '₵${(item.price * item.quantity).toStringAsFixed(2)}',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green.shade700),
-                ),
-              ),
-            );
+            final cartItem = cart.purchasedItems[index];
+            return _buildGridCard(cartItem);
+          },
+        )
+            : ListView.builder(
+          padding: EdgeInsets.all(12),
+          itemCount: cart.purchasedItems.length,
+          itemBuilder: (context, index) {
+            final cartItem = cart.purchasedItems[index];
+            return _buildProductCard(cartItem as CartItem);
           },
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: CustomBottomNav(),
     );
   }
-
-
-Widget _buildBottomNavigationBar() {
-
-  return BottomNavigationBar(
-    currentIndex: _selectedIndex,
-    onTap: _onItemTapped,
-    type: BottomNavigationBarType.fixed,
-    backgroundColor: Colors.green.shade700,
-    selectedItemColor: Colors.white,
-    unselectedItemColor: Colors.white70,
-    elevation: 8.0,
-    items: [
-      BottomNavigationBarItem(
-        icon: Icon(Icons.home),
-        label: 'Home',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.shopping_cart),
-        label: 'Cart',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.category),
-        label: 'Categories',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.person),
-        label: 'Profile',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.location_city_sharp),
-        label: 'Stores',
-      ),
-    ],
-  );
-}
 }

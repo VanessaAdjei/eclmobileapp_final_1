@@ -1,13 +1,17 @@
+import 'package:eclapp/pages/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'Cart.dart';
 import 'auth_service.dart';
 import 'bottomnav.dart';
+import 'loggedout.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -38,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneNumberController = TextEditingController(text: _phoneNumber);
     _loadUserData();
     _loadProfileImage();
-    _checkStoragePermission();
+
   }
 
   @override
@@ -49,19 +53,108 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _checkStoragePermission() async {
-    var status = await Permission.storage.status;
-    if (!status.isGranted) {
-      await Permission.storage.request();
+
+
+  Future<bool> _checkAndRequestGalleryPermission() async {
+    if (Platform.isAndroid) {
+      if (await Permission.photos.isGranted) {
+        return true;
+      }
+
+      final status = await Permission.photos.request();
+      return status.isGranted;
+    } else if (Platform.isIOS) {
+      return true; // iOS only needs declaration in Info.plist
     }
+    return false;
   }
 
+
+
+  void _showLogoutDialog() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            "Logout",
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
+          content: Text(
+            "Are you sure you want to logout?",
+            style: GoogleFonts.poppins(
+              color: themeProvider.isDarkMode ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel",
+                style: GoogleFonts.poppins(
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoggedOutScreen()),
+                      (route) => false,
+                );
+              },
+              child: Text(
+                "Logout",
+                style: GoogleFonts.poppins(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   Future<void> _pickImage() async {
-    var status = await Permission.storage.status;
-    if (!status.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Permission denied. Please allow access from settings.")),
-      );
+    final hasPermission = await _checkAndRequestGalleryPermission();
+
+    if (!hasPermission) {
+      if (await Permission.photos.isPermanentlyDenied) {
+        // Show dialog explaining why permission is needed
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Permission Required"),
+            content: Text("We need gallery access to let you choose profile pictures"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => openAppSettings(),
+                child: Text("Open Settings"),
+              ),
+            ],
+          ),
+        );
+      }
       return;
     }
 
@@ -340,12 +433,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 30),
           ElevatedButton(
-            onPressed: () {
-              // Implement logout functionality here
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Logout functionality to be implemented"))
-              );
-            },
+              onPressed: _showLogoutDialog,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green.shade700,
               foregroundColor: Colors.white,

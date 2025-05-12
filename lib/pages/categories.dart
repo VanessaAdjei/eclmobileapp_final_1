@@ -1071,7 +1071,7 @@ class _ProductListPageState extends State<ProductListPage> {
           IconButton(
             icon: Icon(Icons.search, color: Colors.white),
             onPressed: () {
-              // Implement search functionality
+
             },
           ),
           Stack(
