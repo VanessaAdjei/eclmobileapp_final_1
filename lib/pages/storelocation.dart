@@ -2,10 +2,11 @@
 import 'package:flutter/material.dart';
 import 'Cart.dart';
 import 'bottomnav.dart';
-import 'categories.dart';
-import 'homepage.dart';
+
 
 class StoreSelectionPage extends StatefulWidget {
+  const StoreSelectionPage({super.key});
+
   @override
   _StoreSelectionPageState createState() => _StoreSelectionPageState();
 }
@@ -210,7 +211,7 @@ class Store {
 class StoreListItem extends StatelessWidget {
   final Store store;
 
-  const StoreListItem({Key? key, required this.store}) : super(key: key);
+  const StoreListItem({super.key, required this.store});
 
   @override
   Widget build(BuildContext context) {

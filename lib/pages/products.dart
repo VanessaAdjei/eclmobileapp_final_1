@@ -4,7 +4,7 @@ class ProductPage extends StatelessWidget {
   final String category;
   final List<String> products;
 
-  ProductPage({required this.category, required this.products});
+  const ProductPage({super.key, required this.category, required this.products});
 
   @override
   Widget build(BuildContext context) {

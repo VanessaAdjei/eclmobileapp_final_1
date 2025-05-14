@@ -1,7 +1,7 @@
 import 'dart:io';
+import 'package:eclapp/pages/loggedout.dart';
 import 'package:eclapp/pages/purchases.dart';
 import 'package:eclapp/pages/settings.dart';
-import 'package:eclapp/pages/signinpage.dart';
 import 'package:eclapp/pages/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -17,7 +17,7 @@ import 'bottomnav.dart';
 import 'notifications.dart';
 
 class Profile extends StatefulWidget {
-  const Profile({Key? key}) : super(key: key);
+  const Profile({super.key});
 
   @override
   _ProfileState createState() => _ProfileState();
@@ -138,7 +138,7 @@ class _ProfileState extends State<Profile> {
                 AuthService.signOut().then((_) {
                   Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => SignInScreen())
+                      MaterialPageRoute(builder: (context) => LoggedOutScreen())
                   );
                 });
               },
@@ -375,7 +375,7 @@ class _ProfileState extends State<Profile> {
       Color subtextColor,
       int index,
       ) {
-    // Add a small delay for each card to create a staggered animation effect
+
     return TweenAnimationBuilder(
       tween: Tween<double>(begin: 0, end: 1),
       duration: Duration(milliseconds: 400 + (index * 100)),

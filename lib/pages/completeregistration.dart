@@ -1,9 +1,8 @@
 import 'package:eclapp/pages/Cart.dart';
-import 'package:eclapp/pages/homepage.dart';
 import 'package:flutter/material.dart';
 
 class GetStartedScreen extends StatelessWidget {
-  const GetStartedScreen({Key? key}) : super(key: key);
+  const GetStartedScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

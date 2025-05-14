@@ -10,7 +10,7 @@ import 'cartprovider.dart';
 
 
 class PurchaseScreen extends StatefulWidget {
-  const PurchaseScreen({Key? key}) : super(key: key);
+  const PurchaseScreen({super.key});
 
   @override
   _PurchaseScreenState createState() => _PurchaseScreenState();
@@ -313,7 +313,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
           itemCount: cart.purchasedItems.length,
           itemBuilder: (context, index) {
             final cartItem = cart.purchasedItems[index];
-            return _buildProductCard(cartItem as CartItem);
+            return _buildProductCard(cartItem);
           },
         ),
       ),

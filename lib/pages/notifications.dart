@@ -6,37 +6,56 @@ import 'bottomnav.dart';
 import 'cart.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({Key? key}) : super(key: key);
+  const NotificationsScreen({super.key});
 
   @override
   _NotificationsScreenState createState() => _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  final Map<String, List<Map<String, String>>> groupedNotifications = {};
+  final Map<String, List<Map<String, dynamic>>> groupedNotifications = {};
 
   @override
   void initState() {
     super.initState();
     _loadNotifications();
-    _addSampleNotifications();
   }
 
   void _loadNotifications() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     Set<String> keys = prefs.getKeys();
+
     if (keys.isNotEmpty) {
-      keys.forEach((key) {
+      for (var key in keys) {
         List<String>? notificationStrings = prefs.getStringList(key);
         if (notificationStrings != null) {
-          List<Map<String, String>> notifications = notificationStrings
-              .map((item) => Map<String, String>.from(jsonDecode(item)))
+          List<Map<String, dynamic>> notifications = notificationStrings
+              .map((item) {
+            Map<String, dynamic> notification = Map<String, dynamic>.from(jsonDecode(item));
+            // Convert string 'true'/'false' to boolean if needed
+            notification['expanded'] = _convertToBoolean(notification['expanded']);
+            notification['read'] = _convertToBoolean(notification['read']);
+            return notification;
+          })
               .toList();
           groupedNotifications[key] = notifications;
         }
-      });
+      }
       setState(() {});
+    } else {
+      // Only add sample notifications if none exist
+      _addSampleNotifications();
     }
+  }
+
+  // Helper method to convert string values to boolean
+  bool _convertToBoolean(dynamic value) {
+    if (value is bool) {
+      return value;
+    } else if (value is String) {
+      return value.toLowerCase() == 'true';
+    }
+    return false;
   }
 
   void _saveNotifications() async {
@@ -63,8 +82,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'title': 'Order Confirmation',
         'message': 'Your order for Pain Relief Tablets has been confirmed and is being processed. You will receive a tracking number soon.',
         'time': '2:15 PM',
-        'expanded': 'false',
-        'read': 'false',
+        'expanded': false,  // Changed to boolean
+        'read': false,      // Changed to boolean
         'icon': 'confirmation',
       });
 
@@ -72,8 +91,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'title': 'Shipping Update',
         'message': 'Your order has been shipped and is on its way! Track your package with the tracking number provided.',
         'time': '3:45 PM',
-        'expanded': 'false',
-        'read': 'false',
+        'expanded': false,
+        'read': false,
         'icon': 'shipping',
       });
 
@@ -81,8 +100,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'title': 'Product Available',
         'message': 'The Vitamin D3 Supplement you requested is now back in stock! Order now before it runs out again.',
         'time': '9:00 AM',
-        'expanded': 'false',
-        'read': 'false',
+        'expanded': false,
+        'read': false,
         'icon': 'product',
       });
 
@@ -90,8 +109,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'title': 'Order Delivered',
         'message': 'Your order has been delivered. Thank you for shopping with us! We hope you enjoy your purchase.',
         'time': '5:30 PM',
-        'expanded': 'false',
-        'read': 'false',
+        'expanded': false,
+        'read': false,
         'icon': 'delivered',
       });
 
@@ -99,8 +118,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'title': 'Restock Reminder',
         'message': 'It\'s time to refill your prescription for Blood Pressure Medication. Order now to avoid running out.',
         'time': '8:00 AM',
-        'expanded': 'false',
-        'read': 'false',
+        'expanded': false,
+        'read': false,
         'icon': 'reminder',
       });
 
@@ -108,8 +127,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'title': 'Payment Successful',
         'message': 'Your payment for the order Pain Relief Bundle has been successfully processed. Thank you!',
         'time': '2:50 PM',
-        'expanded': 'false',
-        'read': 'false',
+        'expanded': false,
+        'read': false,
         'icon': 'payment',
       });
 
@@ -117,8 +136,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'title': 'Order Cancellation',
         'message': 'Your order for Cough Syrup has been canceled due to an issue with payment. Please check your payment details.',
         'time': '6:30 PM',
-        'expanded': 'false',
-        'read': 'false',
+        'expanded': false,
+        'read': false,
         'icon': 'cancel',
       });
 
@@ -126,8 +145,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'title': 'Order Status Update',
         'message': 'Your order is currently being processed. We will notify you once it ships.',
         'time': '7:45 PM',
-        'expanded': 'false',
-        'read': 'false',
+        'expanded': false,
+        'read': false,
         'icon': 'status',
       });
     });
@@ -137,9 +156,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _toggleExpand(String group, int index) {
     setState(() {
-      bool isCurrentlyExpanded = groupedNotifications[group]?[index]['expanded'] == 'true';
-      groupedNotifications[group]?[index]['expanded'] = isCurrentlyExpanded ? 'false' : 'true';
-      groupedNotifications[group]?[index]['read'] = 'true';
+      bool isCurrentlyExpanded = _convertToBoolean(groupedNotifications[group]?[index]['expanded']);
+      groupedNotifications[group]?[index]['expanded'] = !isCurrentlyExpanded;
+      groupedNotifications[group]?[index]['read'] = true;
     });
 
     _saveNotifications();
@@ -167,6 +186,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 });
                 _saveNotifications();
                 Navigator.of(context).pop();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('All notifications cleared'),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
               },
             ),
           ],
@@ -238,7 +267,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             margin: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey[200],
+              color: Colors.transparent,
             ),
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.black87),
@@ -256,12 +285,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ),
           actions: [
-
             Container(
               margin: const EdgeInsets.only(right: 8.0),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.green[500],
+                color: Colors.transparent,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                onPressed: _clearAllNotifications,
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.only(right: 8.0),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.transparent,
               ),
               child: IconButton(
                 icon: const Icon(Icons.shopping_cart, color: Colors.white),
@@ -313,11 +352,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ...entry.value.asMap().entries.map((notification) {
                     int index = notification.key;
                     return _buildNotificationTile(entry.key, index, notification.value);
-                  }).toList(),
+                  }),
                   const SizedBox(height: 16),
                 ],
               );
-            }).toList(),
+            }),
           ],
         )
             : Center(
@@ -350,9 +389,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationTile(String group, int index, Map<String, String> notification) {
-    bool isExpanded = notification['expanded'] == 'true';
-    bool isRead = notification['read'] == 'true';
+  Widget _buildNotificationTile(String group, int index, Map<String, dynamic> notification) {
+    bool isExpanded = _convertToBoolean(notification['expanded']);
+    bool isRead = _convertToBoolean(notification['read']);
     IconData iconData = _getIconForNotification(notification['icon']);
     Color iconColor = _getColorForNotification(notification['icon']);
 
@@ -370,28 +409,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       onDismissed: (direction) {
-        setState(() {
-          groupedNotifications[group]?.removeAt(index);
-          if (groupedNotifications[group]?.isEmpty ?? false) {
-            groupedNotifications.remove(group);
-          }
-        });
-        _saveNotifications();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Notification removed'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            action: SnackBarAction(
-              label: 'UNDO',
-              onPressed: () {
-
-              },
-            ),
-          ),
-        );
+        _deleteNotification(group, index);
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
@@ -400,7 +418,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black,
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -411,13 +429,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         child: InkWell(
           onTap: () {
-            setState(() {
-              if (notification['read'] == 'false') {
-                notification['read'] = 'true';
-              }
-              _toggleExpand(group, index);
-            });
-            _saveNotifications();
+            _toggleExpand(group, index);
           },
           borderRadius: BorderRadius.circular(12),
           child: Padding(
@@ -445,7 +457,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  notification['title']!,
+                                  notification['title'] ?? '',
                                   style: TextStyle(
                                     fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
                                     fontSize: 16,
@@ -466,7 +478,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            notification['message']!,
+                            notification['message'] ?? '',
                             maxLines: isExpanded ? null : 2,
                             overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
                             style: TextStyle(
@@ -499,7 +511,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                     ),
                     Text(
-                      notification['time']!,
+                      notification['time'] ?? '',
                       style: TextStyle(color: Colors.grey[500], fontSize: 12),
                     ),
                   ],
@@ -511,9 +523,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                 if (isExpanded)
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildActionButton(Icons.delete_outline, 'Delete', Colors.red[400]!),
+                      TextButton.icon(
+                        onPressed: () {
+                          _deleteNotification(group, index);
+                        },
+                        icon: Icon(Icons.delete_outline, size: 16, color: Colors.red[400]),
+                        label: Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.red[400], fontSize: 13),
+                        ),
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(120, 36),
+                        ),
+                      ),
                     ],
                   ),
               ],
@@ -524,18 +548,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color color) {
-    return TextButton.icon(
-      onPressed: () {
-        // Action handlers would go here
-      },
-      icon: Icon(icon, size: 16, color: color),
-      label: Text(
-        label,
-        style: TextStyle(color: color, fontSize: 13),
-      ),
-      style: TextButton.styleFrom(
-        minimumSize: const Size(80, 36),
+  void _deleteNotification(String group, int index) {
+    setState(() {
+      groupedNotifications[group]?.removeAt(index);
+      if (groupedNotifications[group]?.isEmpty ?? false) {
+        groupedNotifications.remove(group);
+      }
+    });
+    _saveNotifications();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Notification deleted'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

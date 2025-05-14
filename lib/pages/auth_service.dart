@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:eclapp/pages/signinpage.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +7,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'ProductModel.dart';
+
 
 class AuthService {
   static const String baseUrl = "https://eclcommerce.ernestchemists.com.gh/api";
@@ -233,7 +233,7 @@ class AuthService {
     // Optional: Verify token with backend if needed
     final isValid = await _verifyToken();
     if (!isValid) {
-      await logout(); // Clean up invalid token
+      await logout();
       return false;
     }
 
@@ -655,7 +655,7 @@ class AuthService {
 class AuthWrapper extends StatelessWidget {
   final Widget child;
 
-  const AuthWrapper({required this.child});
+  const AuthWrapper({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

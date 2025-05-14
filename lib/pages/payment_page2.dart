@@ -9,7 +9,7 @@ import 'cartprovider.dart';
 import 'homepage.dart';
 
 class PaymentPage extends StatefulWidget {
-  const PaymentPage({Key? key}) : super(key: key);
+  const PaymentPage({super.key});
 
   @override
   _PaymentPageState createState() => _PaymentPageState();
@@ -182,7 +182,7 @@ class _PaymentPageState extends State<PaymentPage> {
         children: [
           Column(
             children: [
-              Container(
+              SizedBox(
                 height: kToolbarHeight + topPadding,
                 child: AppBar(
                   backgroundColor: Colors.green.shade700,
@@ -336,7 +336,7 @@ class _PaymentPageState extends State<PaymentPage> {
               activeColor: Colors.green,
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -414,7 +414,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
 
 class OrderConfirmationPage extends StatelessWidget {
-  const OrderConfirmationPage({Key? key}) : super(key: key);
+  const OrderConfirmationPage({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:eclapp/pages/Cart.dart';
 import 'package:eclapp/pages/auth_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'createaccount.dart';
 
 class SignInScreen extends StatefulWidget {
   final String? returnTo;
-  final VoidCallback? onSuccess;// Nullable but properly handled
+  final VoidCallback? onSuccess;
 
-  const SignInScreen({Key? key, this.onSuccess,this.returnTo}) : super(key: key);
+  const SignInScreen({super.key, this.onSuccess,this.returnTo});
 
   @override
   _SignInScreenState createState() => _SignInScreenState();
 }
+
 class _SignInScreenState extends State<SignInScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
@@ -20,6 +20,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isResettingPassword = false;
 
   @override
   void dispose() {
@@ -33,6 +34,16 @@ class _SignInScreenState extends State<SignInScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -74,6 +85,126 @@ class _SignInScreenState extends State<SignInScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _resetPassword() async {
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final TextEditingController resetEmailController = TextEditingController();
+        resetEmailController.text = _emailController.text;
+
+        return AlertDialog(
+          title: Text('Reset Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Enter your email address and we\'ll send you instructions to reset your password.'),
+              SizedBox(height: 16),
+              TextFormField(
+                controller: resetEmailController,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email, color: Colors.green),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(
+                color: Colors.green,
+              )),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (resetEmailController.text.isEmpty || !resetEmailController.text.contains('@')) {
+                  Navigator.pop(context);
+                  _showError('Please enter a valid email address');
+                  return;
+                }
+
+                Navigator.pop(context); // Close the dialog
+
+                // Simulate API call with a delay
+                setState(() => _isResettingPassword = true);
+
+                // Simulate a network request with a delay
+                await Future.delayed(Duration(seconds: 2));
+
+                if (mounted) {
+                  setState(() => _isResettingPassword = false);
+
+                  // Show confirmation dialog
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text('Check Your Email'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.mark_email_read,
+                            color: Colors.green,
+                            size: 48,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'We\'ve sent password reset instructions to:',
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            resetEmailController.text,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade800,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'If you don\'t see the email, check your spam folder.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                          ),
+                          child: Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: Text('Send Reset Link',style: TextStyle(
+                color: Colors.white,
+              ),),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -221,6 +352,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
+                                    color: Colors.white
                                   ),
                                 ),
                               ),
@@ -229,10 +361,24 @@ class _SignInScreenState extends State<SignInScreen> {
 
                             // Forgot Password
                             TextButton(
-                              onPressed: () {
-                                // Add forgot password functionality
-                              },
-                              child: Text(
+                              onPressed: _isResettingPassword ? null : _resetPassword,
+                              child: _isResettingPassword
+                                  ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.blue.shade800,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text('Processing...', style: TextStyle(color: Colors.blue.shade800)),
+                                ],
+                              )
+                                  : Text(
                                 'Forgot Password?',
                                 style: TextStyle(color: Colors.blue.shade800),
                               ),

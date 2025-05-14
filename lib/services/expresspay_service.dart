@@ -134,7 +134,7 @@ class ExpressPayApi {
 }
 
 class MainActivity extends StatefulWidget {
-  const MainActivity({Key? key}) : super(key: key);
+  const MainActivity({super.key});
 
   @override
   _MainActivityState createState() => _MainActivityState();

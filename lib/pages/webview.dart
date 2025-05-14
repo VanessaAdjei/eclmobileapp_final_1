@@ -7,11 +7,11 @@ class ExpressPayWebView extends StatefulWidget {
   final Function(String) onError;
 
   const ExpressPayWebView({
-    Key? key,
+    super.key,
     required this.checkoutUrl,
     required this.onPaymentComplete,
     required this.onError,
-  }) : super(key: key);
+  });
 
   @override
   _ExpressPayWebViewState createState() => _ExpressPayWebViewState();

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 class ClickableImageButton extends StatelessWidget {
   final String imageUrl = 'assets/images/prescription.png';
 
+  const ClickableImageButton({super.key});
+
   @override
   Widget build(BuildContext context) {
     // return GestureDetector(

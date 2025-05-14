@@ -1,89 +1,307 @@
+import 'package:eclapp/pages/homepage.dart';
 import 'package:eclapp/pages/signinpage.dart';
 import 'package:flutter/material.dart';
+import 'auth_service.dart';
 
 class LoggedOutScreen extends StatelessWidget {
-  const LoggedOutScreen({Key? key}) : super(key: key);
+  const LoggedOutScreen({super.key});
+
+  // Method to ensure proper logout when skipping login
+  Future<void> _ensureLoggedOut() async {
+    // Use the proper logout method from AuthService
+    await AuthService.logout();
+    print("Cleared auth state for guest browsing");
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 40),
-                Image.asset(
-                  'assets/images/png.png',
-                  height: 100,
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: Stack(
+        children: [
+          // Background gradient and pattern
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.white, const Color(0xFFE8F5E9)],
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Sign in to start shopping',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed: () {
-                    // Navigate to sign-in screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SignInScreen(),
+              ),
+            ),
+          ),
+
+          // Main content
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 40),
+
+                  // App logo with hero animation
+                  Hero(
+                    tag: 'appLogo',
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 20,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
+                      child: Image.asset(
+                        'assets/images/png.png',
+                        height: 80,
+                      ),
                     ),
                   ),
-                  child: const Text('Sign In'),
-                ),
-                const SizedBox(height: 40),
-                Expanded(
-                  child: Center(
+
+                  const SizedBox(height: 30),
+
+                  // Welcome text with animation
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 800),
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Transform.translate(
+                          offset: Offset(0, 20 * (1 - value)),
+                          child: child,
+                        ),
+                      );
+                    },
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildFeatureRow(Icons.local_shipping, 'Free Delivery', 'Orders Over GHS120', 80.0), // Increased icon size
-                        _buildFeatureRow(Icons.replay, 'Get Refund', 'Within 30 Days Returns', 80.0),
-                        _buildFeatureRow(Icons.lock, 'Safe Payment', '100% Secure Payment', 80.0),
-                        _buildFeatureRow(Icons.headset_mic, '24/7 Support', 'Feel Free To Call', 80.0),
+                        Text(
+                          'Welcome to ECLAPP',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Sign in to start your shopping experience',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                        ),
                       ],
                     ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Sign in button with animation
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeOut,
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: 0.8 + (0.2 * value),
+                        child: Opacity(opacity: value, child: child),
+                      );
+                    },
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Navigate to sign-in screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SignInScreen(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: const Color(0xFF43A047),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: const Text(
+                        'Sign In',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Skip for now option
+                  TextButton(
+                    onPressed: () async {
+                      // Use proper logout method to ensure user is not logged in
+                      await _ensureLoggedOut();
+
+                      // Navigate to home page as a non-logged in user
+                      if (context.mounted) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomePage(),
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(
+                      'Skip for now',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Features section
+                  Expanded(
+                    child: _buildFeaturesSection(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeaturesSection(BuildContext context) {
+    // List of features with icons, titles and descriptions
+    final features = [
+      {
+        'icon': Icons.local_shipping_outlined,
+        'title': 'Free Delivery',
+        'subtitle': 'Orders Over GHS120',
+        'color': const Color(0xFF43A047),
+      },
+      {
+        'icon': Icons.replay_outlined,
+        'title': 'Easy Returns',
+        'subtitle': 'Within 30 Days',
+        'color': const Color(0xFF1E88E5),
+      },
+      {
+        'icon': Icons.lock_outline,
+        'title': 'Secure Payment',
+        'subtitle': '100% Protected Checkout',
+        'color': const Color(0xFFE53935),
+      },
+      {
+        'icon': Icons.headset_mic_outlined,
+        'title': '24/7 Support',
+        'subtitle': 'Dedicated Customer Service',
+        'color': const Color(0xFFFFB300),
+      },
+    ];
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: features.length,
+            itemBuilder: (context, index) {
+              // Calculate a staggered animation delay for each item
+              final delay = Duration(milliseconds: 200 * index);
+
+              return TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOut,
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(30 * (1 - value), 0),
+                    child: Opacity(opacity: value, child: child),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: _buildFeatureCard(
+                    features[index]['icon'] as IconData,
+                    features[index]['title'] as String,
+                    features[index]['subtitle'] as String,
+                    features[index]['color'] as Color,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureCard(IconData icon, String title, String subtitle, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildFeatureRow(IconData icon, String title, String subtitle, double iconSize) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center, // Center the row horizontally
-      children: [
-        Icon(icon, color: Colors.green, size: iconSize), // Increased icon size
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(subtitle, style: const TextStyle(color: Colors.grey), softWrap: true,),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

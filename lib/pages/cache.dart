@@ -3,7 +3,7 @@ class CacheService {
   factory CacheService() => _instance;
   CacheService._internal();
 
-  Map<String, dynamic> _cache = {};
+  final Map<String, dynamic> _cache = {};
   DateTime? _lastUpdated;
 
   void cacheData(String key, dynamic data) {

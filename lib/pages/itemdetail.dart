@@ -16,7 +16,7 @@ import 'package:shimmer/shimmer.dart';
 class ItemPage extends StatefulWidget {
   final String urlName;
 
-  const ItemPage({Key? key, required this.urlName}) : super(key: key);
+  const ItemPage({super.key, required this.urlName});
 
   @override
   State<ItemPage> createState() => _ItemPageState();
@@ -666,6 +666,8 @@ class _ItemPageState extends State<ItemPage> {
 
 
 class ItemPageSkeleton extends StatelessWidget {
+  const ItemPageSkeleton({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

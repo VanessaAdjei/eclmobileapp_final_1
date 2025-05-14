@@ -18,6 +18,8 @@ import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -35,7 +37,7 @@ class _HomePageState extends State<HomePage> {
 
   TextEditingController searchController = TextEditingController();
 
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
 
   _launchPhoneDialer(String phoneNumber) async {
@@ -56,10 +58,10 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> addToCartWithAuth(BuildContext context, Product product) async {
     if (await AuthService.isLoggedIn()) {
-      // Add to cart directly
+
       _addToCart(context, product);
     } else {
-      // Redirect to login and add after
+
       final result = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
@@ -594,6 +596,7 @@ class _HomePageState extends State<HomePage> {
   }
 
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _allContentLoaded ? _buildMainContent() : _buildOptimizedSkeleton(),
@@ -608,20 +611,6 @@ class _HomePageState extends State<HomePage> {
         SmartRefresher(
             controller: _refreshController,
             onRefresh: loadProducts,
-            // header: CustomHeader(
-            //   builder: (context, mode) {
-            //     return SizedBox(
-            //       height: 60,
-            //       child: Center(
-            //         child: _isLoading
-            //             ? CircularProgressIndicator(
-            //           valueColor: AlwaysStoppedAnimation<Color>(Colors.green[700]!),
-            //         )
-            //             : Icon(Icons.arrow_downward, color: Colors.green[700]),
-            //       ),
-            //     );
-            //   },
-            // ),
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
@@ -820,7 +809,7 @@ class _HomePageState extends State<HomePage> {
                             Container(
                               width: 4,
                               height: 24,
-                              color: Colors.green, // Accent line on the left
+                              color: Colors.green,
                             ),
                             SizedBox(width: 8),
                             Text(
@@ -863,7 +852,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // Loading indicator overlay
           if (_isLoading)
             Positioned(
               top: MediaQuery.of(context).padding.top + 20,
@@ -1081,6 +1069,8 @@ class _HomePageState extends State<HomePage> {
 
 
 class HomePageSkeleton extends StatelessWidget {
+  const HomePageSkeleton({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

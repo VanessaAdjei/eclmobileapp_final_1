@@ -11,7 +11,7 @@ import 'cartprovider.dart';
 import 'homepage.dart';
 
 class PaymentPage extends StatefulWidget {
-  const PaymentPage({Key? key}) : super(key: key);
+  const PaymentPage({super.key});
 
   @override
   _PaymentPageState createState() => _PaymentPageState();
@@ -25,6 +25,7 @@ class _PaymentPageState extends State<PaymentPage> {
   String _userName = "User";
   String _userEmail = "No email available";
   String _phoneNumber = "";
+  String? _paymentError;
 
   final List<Map<String, dynamic>> paymentMethods = [
     {
@@ -78,8 +79,63 @@ class _PaymentPageState extends State<PaymentPage> {
     } else {
       // Payment failed
       debugPrint('expressPayDemo: $message');
-      displayDialog(context, "expressPayDemo: $message");
+      setState(() {
+        _paymentError = 'Payment was not completed. $message';
+      });
+      _showPaymentFailureDialog(message);
     }
+  }
+
+  void _showPaymentFailureDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Payment Failed'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 50,
+              ),
+              const SizedBox(height: 16),
+              Text('Your payment could not be processed. $message'),
+              const SizedBox(height: 8),
+              const Text('Please try again or select a different payment method.'),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Try Again'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Reset payment error state
+                setState(() {
+                  _paymentError = null;
+                });
+                // Get the cart provider
+                final cart = Provider.of<CartProvider>(context, listen: false);
+                // Try the payment again
+                processPayment(cart);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _loadUserData() async {
@@ -164,33 +220,31 @@ class _PaymentPageState extends State<PaymentPage> {
         );
       } else {
         debugPrint('expressPayDemo: $message');
-        displayDialog(context, 'expressPayDemo: $message');
+        setState(() {
+          _paymentError = 'Payment verification failed: $message';
+        });
+        _showPaymentFailureDialog('Payment verification failed: $message');
       }
     });
     expressPayApi.query(token);
   }
 
-  void displayDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Text(message),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> processPayment(CartProvider cart) async {
-    setState(() => _isProcessingPayment = true);
+    // Clear any previous errors
+    setState(() {
+      _paymentError = null;
+      _isProcessingPayment = true;
+    });
+
+    // Check if phone number is available for Mobile Money payment
+    if (selectedPaymentMethod == 'Mobile Money' && (_phoneNumber.isEmpty || _phoneNumber.length < 10)) {
+      setState(() {
+        _isProcessingPayment = false;
+        _paymentError = 'Please provide a valid phone number for Mobile Money payments';
+      });
+      _showPaymentFailureDialog('Please provide a valid phone number for Mobile Money payments');
+      return;
+    }
 
     // Calculate cart total
     final subtotal = cart.calculateSubtotal();
@@ -203,7 +257,7 @@ class _PaymentPageState extends State<PaymentPage> {
     ).join(', ');
 
     if (orderDesc.length > 100) {
-      orderDesc = orderDesc.substring(0, 97) + '...';
+      orderDesc = '${orderDesc.substring(0, 97)}...';
     }
 
     // Split full name to first and last name
@@ -218,13 +272,13 @@ class _PaymentPageState extends State<PaymentPage> {
       'amount': total.toStringAsFixed(2),
       'order_desc': orderDesc,
       'user_name': _userEmail,
-      'first_name': _userName.split(' ').first,
-      'last_name': _userName.split(' ').length > 1
-          ? _userName.split(' ').sublist(1).join(' ')
-          : 'Customer',
+      'first_name': firstName,
+      'last_name': lastName.isEmpty ? 'Customer' : lastName,
       'email': _userEmail,
       'phone_number': _phoneNumber,
       'account_number': _phoneNumber,
+      'payment_method': selectedPaymentMethod == 'Card' ? 'card' :
+      selectedPaymentMethod == 'Mobile Money' ? 'momo' : 'cod',
     };
 
     try {
@@ -243,10 +297,16 @@ class _PaymentPageState extends State<PaymentPage> {
         await _launchCheckoutUrl(redirectUrl);
       } else {
         final errorMsg = jsonResponse['message'] ?? 'Payment failed (no redirect URL)';
-        displayDialog(context, "Error: $errorMsg");
+        setState(() {
+          _paymentError = 'Error: $errorMsg';
+        });
+        _showPaymentFailureDialog(errorMsg);
       }
     } catch (e) {
-      displayDialog(context, 'Payment Error: ${e.toString()}');
+      setState(() {
+        _paymentError = 'Payment Error: ${e.toString()}';
+      });
+      _showPaymentFailureDialog(e.toString());
     } finally {
       setState(() => _isProcessingPayment = false);
     }
@@ -256,6 +316,9 @@ class _PaymentPageState extends State<PaymentPage> {
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
+      setState(() {
+        _paymentError = 'Could not launch payment page';
+      });
       throw 'Could not launch $url';
     }
   }
@@ -269,7 +332,7 @@ class _PaymentPageState extends State<PaymentPage> {
         children: [
           Column(
             children: [
-              Container(
+              SizedBox(
                 height: kToolbarHeight + topPadding,
                 child: AppBar(
                   backgroundColor: Colors.green.shade700,
@@ -292,6 +355,7 @@ class _PaymentPageState extends State<PaymentPage> {
                           _buildPaymentMethods(),
                           const SizedBox(height: 20),
                           _buildSavePaymentToggle(),
+                          if (_paymentError != null) _buildErrorBanner(),
                           const SizedBox(height: 20),
                           _buildOrderSummary(cart),
                           const SizedBox(height: 30),
@@ -327,6 +391,30 @@ class _PaymentPageState extends State<PaymentPage> {
         ],
       ),
       bottomNavigationBar: const CustomBottomNav(),
+    );
+  }
+
+  Widget _buildErrorBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        border: Border.all(color: Colors.red.shade200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _paymentError ?? 'An error occurred with your payment',
+              style: TextStyle(color: Colors.red.shade700),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -432,12 +520,22 @@ class _PaymentPageState extends State<PaymentPage> {
               onChanged: (value) {
                 setState(() {
                   selectedPaymentMethod = value!;
+                  // Clear error when payment method changes
+                  _paymentError = null;
                 });
               },
               activeColor: Colors.green,
             ),
           );
-        }).toList(),
+        }),
+        if (selectedPaymentMethod == 'Mobile Money' && _phoneNumber.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, left: 8.0),
+            child: Text(
+              'A valid phone number is required for Mobile Money payments',
+              style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
+            ),
+          ),
       ],
     );
   }
@@ -513,7 +611,7 @@ class _PaymentPageState extends State<PaymentPage> {
 }
 
 class OrderConfirmationPage extends StatelessWidget {
-  const OrderConfirmationPage({Key? key}) : super(key: key);
+  const OrderConfirmationPage({super.key});
 
   @override
   Widget build(BuildContext context) {

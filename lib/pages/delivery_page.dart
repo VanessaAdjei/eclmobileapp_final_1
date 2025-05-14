@@ -12,7 +12,7 @@ import 'bottomnav.dart';
 import 'cartprovider.dart';
 
 class DeliveryPage extends StatefulWidget {
-  const DeliveryPage({Key? key}) : super(key: key);
+  const DeliveryPage({super.key});
 
   @override
   _DeliveryPageState createState() => _DeliveryPageState();
@@ -35,8 +35,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
   String? selectedRegion;
   String? selectedCity;
   List<String> availableStations = [];
-  String _selectedCountryCode = 'GH';
-  String _countryDialCode = '+233';
+  final String _selectedCountryCode = 'GH';
+  final String _countryDialCode = '+233';
 
   @override
   void dispose() {

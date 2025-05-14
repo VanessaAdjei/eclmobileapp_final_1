@@ -6,7 +6,7 @@ import 'auth_service.dart';
 import 'bottomnav.dart';
 
 class AddPaymentPage extends StatefulWidget {
-  const AddPaymentPage({Key? key}) : super(key: key);
+  const AddPaymentPage({super.key});
 
   @override
   _AddPaymentPageState createState() => _AddPaymentPageState();

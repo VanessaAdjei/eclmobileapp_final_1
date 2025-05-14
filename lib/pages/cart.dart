@@ -7,7 +7,7 @@ import 'delivery_page.dart';
 
 
 class Cart extends StatefulWidget {
-  const Cart({Key? key}) : super(key: key);
+  const Cart({super.key});
 
   @override
   _CartState createState() => _CartState();
@@ -104,13 +104,6 @@ class _CartState extends State<Cart> {
   };
 
   List<String> pickupLocations = ['Madina Mall', 'Accra Mall', 'Kumasi City Mall', 'Takoradi Mall'];
-
-
-
-
-
-
-
 
 
   @override
@@ -349,6 +342,8 @@ class _CartState extends State<Cart> {
   }
 
   Widget _buildStickyCheckoutBar(CartProvider cart) {
+    final bool isCartEmpty = cart.cartItems.isEmpty;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -394,12 +389,12 @@ class _CartState extends State<Cart> {
           // Delivery Options
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
-          )
-,
+          ),
           const SizedBox(height: 8),
-          // Order Summary
-          _buildOrderSummary(cart),
-          const SizedBox(height: 8),
+
+          // Order Summary - Only show if cart has items
+          if (!isCartEmpty) _buildOrderSummary(cart),
+          if (!isCartEmpty) const SizedBox(height: 8),
 
           // Checkout Button
           SizedBox(
@@ -411,14 +406,19 @@ class _CartState extends State<Cart> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
                 ),
+                // Disable the button if cart is empty by changing the opacity
+                disabledBackgroundColor: Colors.green.withOpacity(0.5),
+                disabledForegroundColor: Colors.white.withOpacity(0.7),
               ),
-    onPressed: () {
-    Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => const DeliveryPage()),
-    );
-    },
-              child: const Text('PROCEED TO CHECKOUT', style: TextStyle(color: Colors.white),),
+              onPressed: isCartEmpty
+                  ? null // Set to null to disable the button when cart is empty
+                  : () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DeliveryPage()),
+                );
+              },
+              child: const Text('PROCEED TO CHECKOUT', style: TextStyle(color: Colors.white)),
             ),
           ),
         ],
@@ -466,12 +466,4 @@ class _CartState extends State<Cart> {
       ),
     );
   }
-
-
-
-
-
-
-
-
 }

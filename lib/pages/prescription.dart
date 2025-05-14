@@ -4,20 +4,22 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 class PrescriptionUploadPage extends StatefulWidget {
+  const PrescriptionUploadPage({super.key});
+
   @override
   _PrescriptionUploadPageState createState() => _PrescriptionUploadPageState();
 }
 
 class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
 
   void _chooseFromGallery() async {
     setState(() => _isLoading = true);
     try {
-      final List<XFile>? pickedFiles = await _picker.pickMultiImage();
-      if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      final List<XFile> pickedFiles = await _picker.pickMultiImage();
+      if (pickedFiles.isNotEmpty) {
         List<File> validFiles = [];
 
         for (var file in pickedFiles) {
@@ -63,7 +65,7 @@ class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          child: Container(
+          child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.8,
             child: InteractiveViewer(
               child: Image.file(imageFile, fit: BoxFit.contain),
