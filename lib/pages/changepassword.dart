@@ -89,7 +89,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(40.0), // Slim app bar height
+        preferredSize: const Size.fromHeight(40.0),
         child: AppBar(
           backgroundColor: Colors.green.shade700,
           elevation: 0,

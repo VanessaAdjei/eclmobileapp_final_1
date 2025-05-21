@@ -1,6 +1,5 @@
 
 import 'package:flutter/material.dart';
-
 import 'Cart.dart';
 
 class AboutUsScreen extends StatelessWidget {
@@ -14,7 +13,7 @@ class AboutUsScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leading: InkWell(
-          borderRadius: BorderRadius.circular(100), // Match your shape
+          borderRadius: BorderRadius.circular(100),
           onTap: () => Navigator.pop(context),
           child: Container(
             margin: EdgeInsets.all(8.0),

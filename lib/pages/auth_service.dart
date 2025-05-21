@@ -173,6 +173,17 @@ class AuthService {
     return token != null ? 'Bearer $token' : null;
   }
 
+  static Future<void> clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+  }
+
+  static Future<void> saveToken(String token) async {
+    await secureStorage.write(key: authTokenKey, value: token);
+    print("Token saved: $token");
+  }
+
+
 
   // Sign in a  user
   static Future<Map<String, dynamic>> signIn(String email, String password) async {
@@ -219,7 +230,6 @@ class AuthService {
     debugPrint('🔐 Checking auth state...');
     debugPrint('Memory state: $_isLoggedIn');
     debugPrint('Token exists: ${_authToken != null}');
-    // First check the in-memory state
     if (_isLoggedIn && _authToken != null) return true;
 
 
@@ -260,7 +270,7 @@ class AuthService {
     }
   }
 
-  // Proper logout
+  //  logout
   static Future<void> logout() async {
     try {
       if (_authToken != null) {
@@ -278,7 +288,6 @@ class AuthService {
       _tokenRefreshTimer?.cancel();
     }
   }
-
 
 
   static void _startTokenRefreshTimer() {
@@ -308,9 +317,6 @@ class AuthService {
   }
 
 
-
-
-
    Future<String?> getUserName() async {
     try {
       String? userName = await secureStorage.read(key: userNameKey);
@@ -322,9 +328,6 @@ class AuthService {
       return "User";
     }
   }
-
-
-
 
    Future<void> saveProfileImage(String imagePath) async {
     final prefs = await SharedPreferences.getInstance();
@@ -353,12 +356,11 @@ class AuthService {
   }
 
 
-  // Add this public method to get user data
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
       final name = await secureStorage.read(key: 'userName');
       final email = await secureStorage.read(key: 'userEmail');
-      final phone = await secureStorage.read(key: 'user_phone');
+      final phone = await secureStorage.read(key: 'userphoneNumber');
       final id = await secureStorage.read(key: 'user_id');
 
       if (email == null) return null;
@@ -376,28 +378,27 @@ class AuthService {
   }
 
 
-
-  static Future<void> signOut() async {
+  static Future<String?> getCurrentUserID() async {
     try {
-      await secureStorage.delete(key: loggedInUserKey);
-      await secureStorage.delete(key: userNameKey);
-      await secureStorage.delete(key: userEmailKey);
-      await secureStorage.delete(key: userPhoneNumberKey);
-
-      print("User successfully signed out.");
+      final id = await secureStorage.read(key: 'user_id');
+      if (id == null) {
+        debugPrint('No user ID found in storage');
+        return null;
+      }
+      debugPrint('Retrieved user ID: $id');
+      return id;
     } catch (e) {
-      print("Error during sign-out: $e");
+      debugPrint('Error getting user ID: $e');
+      return null;
     }
   }
 
 
-
-
-
-  static Future<void> saveToken(String token) async {
-    await secureStorage.write(key: authTokenKey, value: token);
-    print("Token saved: $token");
-  }
+  //
+  // static Future<void> saveToken(String token) async {
+  //   await secureStorage.write(key: authTokenKey, value: token);
+  //   print("Token saved: $token");
+  // }
 
 
   static bool isValidJwt(String token) {
@@ -406,8 +407,6 @@ class AuthService {
   }
 
 
-
-  /// Checks if a user is signed up based on email
   static Future<bool> isUserSignedUp(String email) async {
     try {
       String? usersData = await secureStorage.read(key: usersKey);
@@ -425,9 +424,6 @@ class AuthService {
     }
   }
 
-
-
-  /// Retrieves the stored user email
   static Future<String?> getUserEmail() async {
     try {
       return await secureStorage.read(key: userEmailKey);
@@ -437,7 +433,6 @@ class AuthService {
     }
   }
 
-  /// Retrieves the stored phone number
   static Future<String?> getUserPhoneNumber() async {
     try {
       return await secureStorage.read(key: userPhoneNumberKey);
@@ -447,7 +442,7 @@ class AuthService {
     }
   }
 
-  /// Debug method to print stored user data
+
   static Future<void> debugPrintUserData() async {
     try {
       String? usersData = await secureStorage.read(key: usersKey);
@@ -457,7 +452,9 @@ class AuthService {
     }
   }
 
-  /// Validates if the given password matches the stored password
+
+
+
   static Future<bool> validateCurrentPassword(String password) async {
     try {
       String? userEmail = await secureStorage.read(key: loggedInUserKey);
@@ -485,7 +482,7 @@ class AuthService {
     }
   }
 
-  /// Updates the user's password
+
   static Future<bool> updatePassword(String oldPassword, String newPassword) async {
     try {
       if (!(await validateCurrentPassword(oldPassword))) {
@@ -514,8 +511,6 @@ class AuthService {
     }
   }
 
-
-
   static Future<void> saveUserName(String username) async {
     await secureStorage.write(key: userNameKey, value: username);
     print("Username saved: $username");
@@ -526,7 +521,6 @@ class AuthService {
     final isLoggedIn = await AuthService.isLoggedIn();
 
     if (!isLoggedIn) {
-      // Store the current route to return after login
       final currentRoute = ModalRoute.of(context)?.settings.name ?? '/';
 
       await Navigator.push(
@@ -536,7 +530,6 @@ class AuthService {
         ),
       );
 
-      // Check again after returning from login
       final stillLoggedIn = await AuthService.isLoggedIn();
       if (stillLoggedIn && onSuccess != null) {
         onSuccess();
@@ -587,7 +580,7 @@ class AuthService {
     return result ?? false;
   }
 
-  // In your AuthService
+
   static Future<Map<String, dynamic>> checkAuthWithCart() async {
     try {
       final token = await secureStorage.read(key: authTokenKey);
@@ -625,7 +618,6 @@ class AuthService {
     required Product product,
     required Function() onSuccess,
   }) async {
-    // First check auth state without navigation
     final isAuth = await isLoggedIn();
 
     if (isAuth) {
@@ -633,20 +625,154 @@ class AuthService {
       return;
     }
 
-    // Only navigate to login if really not authenticated
     final currentRoute = ModalRoute.of(context)?.settings.name;
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => SignInScreen(
           returnTo: currentRoute,
-          onSuccess: () => onSuccess(), // Call onSuccess after login
+          onSuccess: () => onSuccess(),
         ),
       ),
     );
 
     if (result == true && context.mounted) {
       onSuccess();
+    }
+  }
+
+  static Future<Map<String, dynamic>> getServerCart() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/cart'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'cart': data['items'] ?? [],
+          'lastUpdated': data['updated_at'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to fetch cart: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Exception: $e',
+      };
+    }
+  }
+
+  // Add this to your AuthService class
+  static Future<String?> getToken() async {
+    return await secureStorage.read(key: authTokenKey);
+  }
+
+  static Future<void> syncCartOnLogin(String userId) async {
+    try {
+      // 1. Get server cart first
+      final serverCart = await getServerCart();
+
+      if (serverCart['success']) {
+        // 2. Merge with local cart if needed
+        await mergeCarts(serverCart['cart']);
+      }
+    } catch (e) {
+      debugPrint('Cart sync error: $e');
+    }
+  }
+
+  static Future<void> mergeCarts(List<dynamic> serverItems) async {
+    final prefs = await SharedPreferences.getInstance();
+    final localCart = prefs.getString('local_cart');
+
+    if (localCart != null) {
+      // Implement your merge logic here
+      // Compare timestamps or quantities to resolve conflicts
+    }
+
+    // Save the merged cart
+    await prefs.setString('local_cart', jsonEncode(serverItems));
+  }
+
+
+
+
+
+  static Future<Map<String, dynamic>> updateServerCart(List<Map<String, dynamic>> items) async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/cart/update'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'items': items,
+          'last_updated': DateTime.now().toIso8601String(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true};
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to update cart: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Exception: $e',
+      };
+    }
+  }
+
+
+
+  static Future<Map<String, dynamic>> mergeServerCart(List<Map<String, dynamic>> items) async {
+    try {
+      final token = await getBearerToken();
+      if (token == null) return {'success': false, 'message': 'Not authenticated'};
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/cart/merge'),
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'items': items}),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'cart': json.decode(response.body),
+        };
+      }
+      return {'success': false, 'message': 'Failed to merge cart'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
     }
   }
 
@@ -676,6 +802,17 @@ class AuthWrapper extends StatelessWidget {
       },
     );
   }
+
+
+
+
+
+
+
+
+
+
+
 }
 
 

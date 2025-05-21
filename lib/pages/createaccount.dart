@@ -86,13 +86,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Back Button
                   IconButton(
                     icon: Icon(Icons.arrow_back_rounded, color: Colors.green.shade800),
                     onPressed: () => Navigator.pop(context),
                   ),
-
-                  // Logo and Header
                   Center(
                     child: Column(
                       children: [
@@ -124,7 +121,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                   const SizedBox(height: 30),
 
-                  // Form Fields
+
                   _buildTextField(
                     'Full Name',
                     Icons.person_outline,
@@ -217,8 +214,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
 
                   const SizedBox(height: 10),
-
-                  // Terms Checkbox
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -268,8 +263,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
 
                   const SizedBox(height: 20),
-
-                  // Sign Up Button
                   SizedBox(
                     width: double.infinity,
                     height: 52,

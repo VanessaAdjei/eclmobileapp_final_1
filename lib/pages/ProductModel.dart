@@ -9,6 +9,7 @@ class Product {
   final String quantity;
   final String category;
   final String? route;
+  final List<String> tags;
 
   Product({
     required this.id,
@@ -21,6 +22,7 @@ class Product {
     required this.quantity,
     required this.category,
     required this.route,
+    this.tags = const [],
   });
 
 
@@ -36,6 +38,9 @@ class Product {
       quantity: json['quantity'] ?? '',
       category: json['category'] ?? '',
       route: json['route'],
+      tags: json['tags'] != null
+          ? List<String>.from(json['tags'])
+          : [],
     );
   }
 }

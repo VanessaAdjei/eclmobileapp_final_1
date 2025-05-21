@@ -8,36 +8,7 @@ class ClickableImageButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // return GestureDetector(
-    //   onTap: () {
-    //     // Navigate to the Prescription page
-    //     Navigator.push(
-    //       context,
-    //       MaterialPageRoute(builder: (context) => PrescriptionUploadPage()),
-    //     );
-    //   },
-    //   child: Container(
-    //     height: 100, // Set the height of the button
-    //     width: 420, // Set the width of the button
-    //     margin: EdgeInsets.symmetric(horizontal: 8), // Add margin
-    //     decoration: BoxDecoration(
-    //       borderRadius: BorderRadius.circular(10), // Rounded corners
-    //       boxShadow: [
-    //         BoxShadow(
-    //           color: Colors.black26,
-    //           blurRadius: 4,
-    //         ),
-    //       ],
-    //     ),
-    //     child: ClipRRect(
-    //       borderRadius: BorderRadius.circular(10), // Rounded corners for the image
-    //       child: Image.asset(
-    //         imageUrl,
-    //         fit: BoxFit.cover, // Ensure the image covers the container
-    //       ),
-    //     ),
-    //   ),
-    // );
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 16),

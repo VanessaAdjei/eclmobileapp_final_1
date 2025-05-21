@@ -1,5 +1,5 @@
+// pages/settings.dart
 import 'dart:io';
-import 'package:eclapp/pages/addpayment.dart';
 import 'package:eclapp/pages/changepassword.dart';
 import 'package:eclapp/pages/privacypolicy.dart';
 import 'package:eclapp/pages/profilescreen.dart';
@@ -54,7 +54,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadUserData() async {
     final secureStorage = FlutterSecureStorage();
     String name = await secureStorage.read(key: 'userName') ?? "User";
-    String email = await secureStorage.read(key: 'userEmail') ?? "No email available";
+    String email =
+        await secureStorage.read(key: 'userEmail') ?? "No email available";
 
     setState(() {
       _userName = name;
@@ -93,8 +94,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             "Logout",
             style: GoogleFonts.poppins(
@@ -132,7 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => LoggedOutScreen()),
-                      (route) => false,
+                  (route) => false,
                 );
               },
               child: Text(
@@ -153,7 +156,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     // Color scheme
     final primaryColor = isDark ? Colors.green.shade400 : Colors.green.shade700;
-    final backgroundColor = isDark ? Colors.grey.shade900 : Colors.grey.shade100;
+    final backgroundColor =
+        isDark ? Colors.grey.shade900 : Colors.grey.shade100;
     final cardColor = isDark ? Colors.grey.shade800 : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
     final subtextColor = isDark ? Colors.white70 : Colors.black54;
@@ -180,9 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           IconButton(
             icon: const Icon(Icons.shopping_cart, color: Colors.white),
             onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const Cart())
-            ),
+                context, MaterialPageRoute(builder: (context) => const Cart())),
           ),
         ],
       ),
@@ -192,7 +194,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Container(
               color: primaryColor,
-              padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 30),
+              padding: const EdgeInsets.only(
+                  left: 20, right: 20, top: 10, bottom: 30),
               child: Column(
                 children: [
                   // Profile section
@@ -207,26 +210,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               width: 80,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
                                 color: Colors.grey[300],
                                 image: _profileImage != null
                                     ? DecorationImage(
-                                  image: FileImage(_profileImage!),
-                                  fit: BoxFit.cover,
-                                )
-                                    : (_profileImagePath != null && File(_profileImagePath!).existsSync()
-                                    ? DecorationImage(
-                                  image: FileImage(File(_profileImagePath!)),
-                                  fit: BoxFit.cover,
-                                )
-                                    : const DecorationImage(
-                                  image: AssetImage("assets/images/default_avatar.png"),
-                                  fit: BoxFit.cover,
-                                )),
+                                        image: FileImage(_profileImage!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : (_profileImagePath != null &&
+                                            File(_profileImagePath!)
+                                                .existsSync()
+                                        ? DecorationImage(
+                                            image: FileImage(
+                                                File(_profileImagePath!)),
+                                            fit: BoxFit.cover,
+                                          )
+                                        : const DecorationImage(
+                                            image: AssetImage(
+                                                "assets/images/default_avatar.png"),
+                                            fit: BoxFit.cover,
+                                          )),
                               ),
                             ),
                           ),
-
                         ],
                       ),
                       const SizedBox(width: 20),
@@ -254,10 +261,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             InkWell(
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => ProfileScreen()),
+                                MaterialPageRoute(
+                                    builder: (context) => ProfileScreen()),
                               ),
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(16),
@@ -316,14 +325,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   primaryColor,
                 ),
                 const Divider(height: 1),
-                _buildSettingOption(
-                  context,
-                  "Payment Methods",
-                  Icons.credit_card,
-                  AddPaymentPage(),
-                  textColor,
-                  primaryColor,
-                ),
+                // _buildSettingOption(
+                //   context,
+                //   "Payment Methods",
+                //   Icons.credit_card,
+                //   AddPaymentPage(),
+                //   textColor,
+                //   primaryColor,
+                // ),
               ],
               cardColor,
             ),
@@ -443,7 +452,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingsCard(BuildContext context, List<Widget> children, Color cardColor) {
+  Widget _buildSettingsCard(
+      BuildContext context, List<Widget> children, Color cardColor) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -464,13 +474,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSettingOption(
-      BuildContext context,
-      String text,
-      IconData icon,
-      Widget destination,
-      Color textColor,
-      Color iconColor,
-      ) {
+    BuildContext context,
+    String text,
+    IconData icon,
+    Widget destination,
+    Color textColor,
+    Color iconColor,
+  ) {
     return Material(
       color: Colors.transparent,
       child: InkWell(

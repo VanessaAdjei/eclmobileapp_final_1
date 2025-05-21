@@ -14,6 +14,7 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final Map<String, List<Map<String, dynamic>>> groupedNotifications = {};
+  bool isLoading = true; // Add loading state
 
   @override
   void initState() {
@@ -21,30 +22,53 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _loadNotifications();
   }
 
-  void _loadNotifications() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    Set<String> keys = prefs.getKeys();
+  Future<void> _loadNotifications() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      Set<String> keys = prefs.getKeys();
 
-    if (keys.isNotEmpty) {
-      for (var key in keys) {
-        List<String>? notificationStrings = prefs.getStringList(key);
-        if (notificationStrings != null) {
-          List<Map<String, dynamic>> notifications = notificationStrings
-              .map((item) {
-            Map<String, dynamic> notification = Map<String, dynamic>.from(jsonDecode(item));
-            // Convert string 'true'/'false' to boolean if needed
-            notification['expanded'] = _convertToBoolean(notification['expanded']);
-            notification['read'] = _convertToBoolean(notification['read']);
-            return notification;
-          })
-              .toList();
-          groupedNotifications[key] = notifications;
+      // Check if there are any notification keys
+      List<String> notificationKeys = keys
+          .where((key) => key.startsWith('notification_'))
+          .toList();
+
+      if (notificationKeys.isNotEmpty) {
+        for (var key in notificationKeys) {
+          List<String>? notificationStrings = prefs.getStringList(key);
+          if (notificationStrings != null && notificationStrings.isNotEmpty) {
+            try {
+              List<Map<String, dynamic>> notifications = notificationStrings
+                  .map((item) {
+                Map<String, dynamic> notification = Map<String, dynamic>.from(jsonDecode(item));
+                // Convert string 'true'/'false' to boolean if needed
+                notification['expanded'] = _convertToBoolean(notification['expanded']);
+                notification['read'] = _convertToBoolean(notification['read']);
+                return notification;
+              })
+                  .toList();
+
+              // Extract the actual date from the key (removing the 'notification_' prefix)
+              String dateKey = key.replaceFirst('notification_', '');
+              groupedNotifications[dateKey] = notifications;
+            } catch (e) {
+              print('Error decoding notifications for key $key: $e');
+            }
+          }
         }
+      } else {
+        print('No notification keys found. Adding sample notifications.');
+        // Add sample notifications for multiple days
+        _addDailyNotifications();
       }
-      setState(() {});
-    } else {
-      // Only add sample notifications if none exist
-      _addSampleNotifications();
+    } catch (e) {
+      print('Error loading notifications: $e');
+      // If there's an error loading, add sample notifications anyway
+      _addDailyNotifications();
+    } finally {
+      // Update UI regardless of success or failure
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -58,99 +82,159 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return false;
   }
 
-  void _saveNotifications() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    groupedNotifications.forEach((date, notifications) {
-      List<String> notificationStrings = notifications.map((notif) => jsonEncode(notif)).toList();
-      prefs.setStringList(date, notificationStrings);
-    });
-  }
+  Future<void> _saveNotifications() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  void _addSampleNotifications() {
-    if (groupedNotifications.isNotEmpty) return;
-    DateTime now = DateTime.now();
-    String formattedDate = DateFormat("EEEE, MMM d").format(now);
-
-    setState(() {
-      if (groupedNotifications.length > 10) {
-        groupedNotifications.remove(groupedNotifications.keys.first);
+      // Clear existing notification keys to prevent duplicates
+      Set<String> keys = prefs.getKeys();
+      for (var key in keys) {
+        if (key.startsWith('notification_')) {
+          await prefs.remove(key);
+        }
       }
 
-      groupedNotifications.putIfAbsent(formattedDate, () => []);
-
-      groupedNotifications[formattedDate]?.add({
-        'title': 'Order Confirmation',
-        'message': 'Your order for Pain Relief Tablets has been confirmed and is being processed. You will receive a tracking number soon.',
-        'time': '2:15 PM',
-        'expanded': false,  // Changed to boolean
-        'read': false,      // Changed to boolean
-        'icon': 'confirmation',
+      // Save current notifications
+      await Future.forEach(groupedNotifications.entries, (entry) async {
+        String date = entry.key;
+        List<Map<String, dynamic>> notifications = entry.value;
+        List<String> notificationStrings = notifications.map((notif) => jsonEncode(notif)).toList();
+        await prefs.setStringList('notification_$date', notificationStrings);
       });
 
-      groupedNotifications[formattedDate]?.add({
-        'title': 'Shipping Update',
-        'message': 'Your order has been shipped and is on its way! Track your package with the tracking number provided.',
-        'time': '3:45 PM',
-        'expanded': false,
-        'read': false,
-        'icon': 'shipping',
-      });
+      print('Notifications saved successfully. Count: ${groupedNotifications.length}');
+    } catch (e) {
+      print('Error saving notifications: $e');
+    }
+  }
 
-      groupedNotifications[formattedDate]?.add({
-        'title': 'Product Available',
-        'message': 'The Vitamin D3 Supplement you requested is now back in stock! Order now before it runs out again.',
-        'time': '9:00 AM',
-        'expanded': false,
-        'read': false,
-        'icon': 'product',
-      });
+  void _addDailyNotifications() {
+    // Clear existing notifications to prevent duplicates
+    groupedNotifications.clear();
 
-      groupedNotifications[formattedDate]?.add({
-        'title': 'Order Delivered',
-        'message': 'Your order has been delivered. Thank you for shopping with us! We hope you enjoy your purchase.',
-        'time': '5:30 PM',
-        'expanded': false,
-        'read': false,
-        'icon': 'delivered',
-      });
+    // Generate notifications for the last 7 days
+    DateTime now = DateTime.now();
+    for (int i = 0; i < 7; i++) {
+      DateTime date = now.subtract(Duration(days: i));
+      String formattedDate = DateFormat("EEEE, MMM d").format(date);
 
-      groupedNotifications[formattedDate]?.add({
-        'title': 'Restock Reminder',
-        'message': 'It\'s time to refill your prescription for Blood Pressure Medication. Order now to avoid running out.',
-        'time': '8:00 AM',
+      // Initialize the list for this date if it doesn't exist
+      groupedNotifications[formattedDate] = [];
+
+      // Add different types of notifications for each day
+      if (i == 0) { // Today
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Order Confirmation',
+          'message': 'Your order for Pain Relief Tablets has been confirmed and is being processed. You will receive a tracking number soon.',
+          'time': '2:15 PM',
+          'expanded': false,
+          'read': false,
+          'icon': 'confirmation',
+        });
+
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Shipping Update',
+          'message': 'Your order has been shipped and is on its way! Track your package with the tracking number provided.',
+          'time': '3:45 PM',
+          'expanded': false,
+          'read': false,
+          'icon': 'shipping',
+        });
+      } else if (i == 1) { // Yesterday
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Product Available',
+          'message': 'The Vitamin D3 Supplement you requested is now back in stock! Order now before it runs out again.',
+          'time': '9:00 AM',
+          'expanded': false,
+          'read': false,
+          'icon': 'product',
+        });
+
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Order Delivered',
+          'message': 'Your order has been delivered. Thank you for shopping with us! We hope you enjoy your purchase.',
+          'time': '5:30 PM',
+          'expanded': false,
+          'read': false,
+          'icon': 'delivered',
+        });
+      } else if (i == 2) { // 2 days ago
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Restock Reminder',
+          'message': 'It\'s time to refill your prescription for Blood Pressure Medication. Order now to avoid running out.',
+          'time': '8:00 AM',
+          'expanded': false,
+          'read': false,
+          'icon': 'reminder',
+        });
+
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Payment Successful',
+          'message': 'Your payment for the order Pain Relief Bundle has been successfully processed. Thank you!',
+          'time': '2:50 PM',
+          'expanded': false,
+          'read': false,
+          'icon': 'payment',
+        });
+      } else if (i == 3) { // 3 days ago
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Weekly Health Tip',
+          'message': 'Remember to stay hydrated! Drinking enough water helps maintain healthy blood pressure and supports overall health.',
+          'time': '10:30 AM',
+          'expanded': false,
+          'read': false,
+          'icon': 'reminder',
+        });
+      } else if (i == 4) { // 4 days ago
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Order Status Update',
+          'message': 'Your order is currently being processed. We will notify you once it ships.',
+          'time': '7:45 PM',
+          'expanded': false,
+          'read': false,
+          'icon': 'status',
+        });
+      } else if (i == 5) { // 5 days ago
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Special Offer',
+          'message': 'Get 20% off on all vitamins this week! Use code HEALTH20 at checkout.',
+          'time': '11:20 AM',
+          'expanded': false,
+          'read': false,
+          'icon': 'product',
+        });
+      } else if (i == 6) { // 6 days ago
+        groupedNotifications[formattedDate]!.add({
+          'title': 'Order Cancellation',
+          'message': 'Your order for Cough Syrup has been canceled due to an issue with payment. Please check your payment details.',
+          'time': '6:30 PM',
+          'expanded': false,
+          'read': false,
+          'icon': 'cancel',
+        });
+
+        groupedNotifications[formattedDate]!.add({
+          'title': 'New Product Alert',
+          'message': 'Check out our new range of organic supplements now available in the store!',
+          'time': '4:15 PM',
+          'expanded': false,
+          'read': false,
+          'icon': 'product',
+        });
+      }
+
+      // Add a generic notification to each day
+      groupedNotifications[formattedDate]!.add({
+        'title': 'Daily Health Reminder',
+        'message': 'Remember to take your medications as prescribed and maintain a healthy routine.',
+        'time': i == 0 ? '8:00 AM' : '${8 + i % 4}:${i % 2 == 0 ? '00' : '30'} AM',
         'expanded': false,
         'read': false,
         'icon': 'reminder',
       });
+    }
 
-      groupedNotifications[formattedDate]?.add({
-        'title': 'Payment Successful',
-        'message': 'Your payment for the order Pain Relief Bundle has been successfully processed. Thank you!',
-        'time': '2:50 PM',
-        'expanded': false,
-        'read': false,
-        'icon': 'payment',
-      });
-
-      groupedNotifications[formattedDate]?.add({
-        'title': 'Order Cancellation',
-        'message': 'Your order for Cough Syrup has been canceled due to an issue with payment. Please check your payment details.',
-        'time': '6:30 PM',
-        'expanded': false,
-        'read': false,
-        'icon': 'cancel',
-      });
-
-      groupedNotifications[formattedDate]?.add({
-        'title': 'Order Status Update',
-        'message': 'Your order is currently being processed. We will notify you once it ships.',
-        'time': '7:45 PM',
-        'expanded': false,
-        'read': false,
-        'icon': 'status',
-      });
-    });
-
+    // Save the notifications to SharedPreferences
     _saveNotifications();
   }
 
@@ -270,7 +354,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               color: Colors.transparent,
             ),
             child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black87),
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -281,7 +365,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: Colors.white,
             ),
           ),
           actions: [
@@ -316,7 +400,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ],
         ),
-        body: groupedNotifications.isNotEmpty
+        body: isLoading
+            ? Center(child: CircularProgressIndicator(color: Colors.green[700]))
+            : groupedNotifications.isNotEmpty
             ? ListView(
           padding: const EdgeInsets.all(12.0),
           children: [
@@ -349,10 +435,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  ...entry.value.asMap().entries.map((notification) {
-                    int index = notification.key;
-                    return _buildNotificationTile(entry.key, index, notification.value);
-                  }),
+                  if (entry.value.isNotEmpty)
+                    ...entry.value.asMap().entries.map((notification) {
+                      int index = notification.key;
+                      return _buildNotificationTile(entry.key, index, notification.value);
+                    }),
                   const SizedBox(height: 16),
                 ],
               );
@@ -379,6 +466,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[500],
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    isLoading = true;
+                  });
+                  _addDailyNotifications();
+                  setState(() {
+                    isLoading = false;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[700],
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  "Generate Sample Notifications",
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ],

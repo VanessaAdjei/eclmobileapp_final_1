@@ -49,11 +49,12 @@ dependencies:
   shimmer: ^2.0.0
   skeleton_text: ^3.0.1
   geocoding: ^2.1.1
-#  flutter_typeahead: ^5.0.0+1
   geolocator: ^10.1.0
   webview_flutter: ^4.2.2
-  cached_network_image: ^3.2.3
+  cached_network_image: ^3.4.1
   flutter_animate: ^4.2.0
+  flutter_typeahead: ^4.1.0
+  flutter_keyboard_visibility: ^5.4.1
 
 
 

@@ -331,6 +331,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               height: 50,
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _signIn,
+
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
                                   shape: RoundedRectangleBorder(

@@ -5,10 +5,7 @@ import 'auth_service.dart';
 
 class LoggedOutScreen extends StatelessWidget {
   const LoggedOutScreen({super.key});
-
-  // Method to ensure proper logout when skipping login
   Future<void> _ensureLoggedOut() async {
-    // Use the proper logout method from AuthService
     await AuthService.logout();
     print("Cleared auth state for guest browsing");
   }
@@ -90,7 +87,7 @@ class LoggedOutScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Sign in to start your shopping experience',
+                          'Start your shopping experience',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                         ),
@@ -100,7 +97,7 @@ class LoggedOutScreen extends StatelessWidget {
 
                   const SizedBox(height: 40),
 
-                  // Sign in button with animation
+
                   TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0.0, end: 1.0),
                     duration: const Duration(milliseconds: 800),
@@ -112,14 +109,18 @@ class LoggedOutScreen extends StatelessWidget {
                       );
                     },
                     child: ElevatedButton(
-                      onPressed: () {
-                        // Navigate to sign-in screen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SignInScreen(),
-                          ),
-                        );
+                      onPressed: () async {
+                        await _ensureLoggedOut();
+
+                        // Navigate to home page as a non-logged in user
+                        if (context.mounted) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HomePage(),
+                            ),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.white,
@@ -132,7 +133,7 @@ class LoggedOutScreen extends StatelessWidget {
                         elevation: 2,
                       ),
                       child: const Text(
-                        'Sign In',
+                        'Start Shopping',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -142,30 +143,7 @@ class LoggedOutScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Skip for now option
-                  TextButton(
-                    onPressed: () async {
-                      // Use proper logout method to ensure user is not logged in
-                      await _ensureLoggedOut();
 
-                      // Navigate to home page as a non-logged in user
-                      if (context.mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => HomePage(),
-                          ),
-                        );
-                      }
-                    },
-                    child: Text(
-                      'Skip for now',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
 
                   const SizedBox(height: 20),
 

@@ -2,7 +2,6 @@ class CartItems {
 
   static final List<Map<String, dynamic>> _cart = [];
 
-
   static void addToCart(String name, double price, String image, int quantity) {
     int index = _cart.indexWhere((item) => item['name'] == name);
 

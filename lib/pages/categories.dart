@@ -1,3 +1,4 @@
+// pages/categories.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -6,6 +7,7 @@ import 'Cart.dart';
 import 'bottomnav.dart';
 import 'homepage.dart';
 import 'itemdetail.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CategoryPage extends StatefulWidget {
   const CategoryPage({super.key});
@@ -15,8 +17,6 @@ class CategoryPage extends StatefulWidget {
 }
 
 class _CategoryPageState extends State<CategoryPage> {
-
-
   final TextEditingController _searchController = TextEditingController();
   List<dynamic> _categories = [];
   List<dynamic> _filteredCategories = [];
@@ -33,7 +33,8 @@ class _CategoryPageState extends State<CategoryPage> {
   Future<void> _fetchTopCategories() async {
     try {
       final response = await http.get(
-        Uri.parse('https://eclcommerce.ernestchemists.com.gh/api/top-categories'),
+        Uri.parse(
+            'https://eclcommerce.ernestchemists.com.gh/api/top-categories'),
       );
 
       if (response.statusCode == 200) {
@@ -108,7 +109,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => HomePage()),
-                      (route) => false,
+                  (route) => false,
                 );
               }
             },
@@ -127,20 +128,7 @@ class _CategoryPageState extends State<CategoryPage> {
             margin: EdgeInsets.only(right: 16.0),
             child: Stack(
               alignment: Alignment.center,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 28),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const Cart(),
-                      ),
-                    );
-                  },
-                ),
-
-              ],
+              children: [],
             ),
           ),
         ],
@@ -153,7 +141,6 @@ class _CategoryPageState extends State<CategoryPage> {
             // Gradient Header
             Container(
               decoration: BoxDecoration(
-
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(24),
                   bottomRight: Radius.circular(24),
@@ -184,7 +171,8 @@ class _CategoryPageState extends State<CategoryPage> {
                       decoration: InputDecoration(
                         hintText: "Search Categories...",
                         hintStyle: TextStyle(color: Colors.grey.shade400),
-                        prefixIcon: Icon(Icons.search, color: Colors.green.shade700),
+                        prefixIcon:
+                            Icon(Icons.search, color: Colors.green.shade700),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -199,7 +187,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   Text(
                     'Find your products by category',
                     style: TextStyle(
-                      color: Colors.green ,
+                      color: Colors.green,
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
                     ),
@@ -209,7 +197,7 @@ class _CategoryPageState extends State<CategoryPage> {
             ),
             // Categories Title
             Padding(
-              padding: EdgeInsets.fromLTRB(10,10,10,10),
+              padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -292,12 +280,12 @@ class _CategoryPageState extends State<CategoryPage> {
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.85,
+        crossAxisSpacing: 20,
+        mainAxisSpacing: 20,
+        childAspectRatio: 0.7,
       ),
       itemCount: _filteredCategories.length,
       itemBuilder: (context, index) {
@@ -361,14 +349,15 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 }
 
-class CategoryGridItem extends StatelessWidget {
+class CategoryGridItem extends StatefulWidget {
   final String categoryName;
   final List<dynamic> subcategories;
   final bool hasSubcategories;
   final VoidCallback onTap;
   final String imageUrl;
 
-  const CategoryGridItem({super.key, 
+  const CategoryGridItem({
+    super.key,
     required this.categoryName,
     required this.hasSubcategories,
     required this.subcategories,
@@ -377,105 +366,118 @@ class CategoryGridItem extends StatelessWidget {
   });
 
   @override
+  State<CategoryGridItem> createState() => _CategoryGridItemState();
+}
+
+class _CategoryGridItemState extends State<CategoryGridItem> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              offset: Offset(0, 2),
-              blurRadius: 8,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  // Image Container
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                      color: Colors.grey[200],
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 1.04 : 1.0,
+        duration: Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(_isPressed ? 0.18 : 0.10),
+                blurRadius: _isPressed ? 24 : 16,
+                offset: Offset(0, _isPressed ? 8 : 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                  child: CachedNetworkImage(
+                    imageUrl: widget.imageUrl,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey.shade200,
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.green),
+                        ),
+                      ),
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                      child: Image.network(
-                       imageUrl,
-                        fit: BoxFit.fill,
-                        height: double.infinity,
-                        width: double.infinity,
-
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey.shade100,
+                      child: Center(
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          color: Colors.grey,
+                          size: 36,
+                        ),
                       ),
                     ),
                   ),
-                  // Gradient overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black.withOpacity(0.3)],
-                        stops: [0.7, 1.0],
-                      ),
-                    ),
+                ),
+              ),
+              SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: Text(
+                  widget.categoryName,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
-                ],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-            // Category name and info
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Icon(
+                    widget.hasSubcategories
+                        ? Icons.folder
+                        : Icons.shopping_bag_outlined,
+                    size: 16,
+                    color: Colors.green.shade700,
+                  ),
+                  SizedBox(width: 6),
                   Text(
-                    categoryName,
+                    widget.hasSubcategories
+                        ? "View subcategories"
+                        : "Browse products",
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade800,
+                      fontSize: 12,
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        hasSubcategories ? Icons.folder : Icons.shopping_bag_outlined,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                      SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          hasSubcategories ? "View subcategories" : "Browse products",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
-            ),
-          ],
+              SizedBox(height: 18),
+            ],
+          ),
         ),
       ),
     );
@@ -497,7 +499,6 @@ class SubcategoryPage extends StatefulWidget {
 }
 
 class SubcategoryPageState extends State<SubcategoryPage> {
-  // State variables
   List<dynamic> subcategories = [];
   List<dynamic> products = [];
   bool isLoading = true;
@@ -507,7 +508,6 @@ class SubcategoryPageState extends State<SubcategoryPage> {
   bool showScrollToTop = false;
   String sortOption = 'Latest';
 
-  // Lifecycle methods
   @override
   void initState() {
     super.initState();
@@ -524,7 +524,8 @@ class SubcategoryPageState extends State<SubcategoryPage> {
   Future<void> fetchSubcategories() async {
     try {
       final response = await http.get(
-        Uri.parse('https://eclcommerce.ernestchemists.com.gh/api/categories/${widget.categoryId}'),
+        Uri.parse(
+            'https://eclcommerce.ernestchemists.com.gh/api/categories/${widget.categoryId}'),
       );
 
       if (response.statusCode == 200) {
@@ -535,7 +536,8 @@ class SubcategoryPageState extends State<SubcategoryPage> {
           handleSubcategoriesError('Failed to load subcategories');
         }
       } else {
-        handleSubcategoriesError('Failed to load subcategories: ${response.statusCode}');
+        handleSubcategoriesError(
+            'Failed to load subcategories: ${response.statusCode}');
       }
     } catch (e) {
       handleSubcategoriesError('Error: ${e.toString()}');
@@ -551,7 +553,8 @@ class SubcategoryPageState extends State<SubcategoryPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('https://eclcommerce.ernestchemists.com.gh/api/product-categories/$subcategoryId'),
+        Uri.parse(
+            'https://eclcommerce.ernestchemists.com.gh/api/product-categories/$subcategoryId'),
       );
 
       if (response.statusCode == 200) {
@@ -569,7 +572,6 @@ class SubcategoryPageState extends State<SubcategoryPage> {
     }
   }
 
-  // Helper Methods
   void setupScrollListener() {
     scrollController.addListener(() {
       setState(() {
@@ -622,40 +624,177 @@ class SubcategoryPageState extends State<SubcategoryPage> {
     setState(() {
       sortOption = option;
 
-      // Apply sorting logic based on the selected option
       switch (option) {
         case 'Price: Low to High':
           products.sort((a, b) {
-            final double priceA = double.tryParse(a['price']?.toString() ?? '0') ?? 0;
-            final double priceB = double.tryParse(b['price']?.toString() ?? '0') ?? 0;
+            final double priceA =
+                double.tryParse(a['price']?.toString() ?? '0') ?? 0;
+            final double priceB =
+                double.tryParse(b['price']?.toString() ?? '0') ?? 0;
             return priceA.compareTo(priceB);
           });
           break;
         case 'Price: High to Low':
           products.sort((a, b) {
-            final double priceA = double.tryParse(a['price']?.toString() ?? '0') ?? 0;
-            final double priceB = double.tryParse(b['price']?.toString() ?? '0') ?? 0;
+            final double priceA =
+                double.tryParse(a['price']?.toString() ?? '0') ?? 0;
+            final double priceB =
+                double.tryParse(b['price']?.toString() ?? '0') ?? 0;
             return priceB.compareTo(priceA);
           });
           break;
         case 'Popular':
-
           break;
         case 'Latest':
         default:
-
           break;
       }
     });
   }
 
-  // UI Components
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       backgroundColor: Color(0xFFF8F9FA),
-      appBar: buildAppBar(),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(64),
+        child: Container(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.green.shade700, Colors.green.shade900],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back_ios_new,
+                    color: Colors.white, size: 24),
+                onPressed: () => Navigator.pop(context),
+                splashRadius: 22,
+              ),
+              SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  widget.categoryName,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    letterSpacing: 0.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.search, color: Colors.white, size: 24),
+                onPressed: () => _showSearch(context),
+                splashRadius: 22,
+              ),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  sortProducts(value);
+                },
+                offset: Offset(0, 40),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'Latest',
+                    child: Row(
+                      children: [
+                        Icon(Icons.access_time,
+                            size: 18,
+                            color: sortOption == 'Latest'
+                                ? Colors.green.shade700
+                                : Colors.grey.shade800),
+                        SizedBox(width: 12),
+                        Text(
+                          'Latest',
+                          style: TextStyle(
+                            color: sortOption == 'Latest'
+                                ? Colors.green.shade700
+                                : Colors.grey.shade800,
+                            fontWeight: sortOption == 'Latest'
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'Price: Low to High',
+                    child: Row(
+                      children: [
+                        Icon(Icons.arrow_upward,
+                            size: 18,
+                            color: sortOption == 'Price: Low to High'
+                                ? Colors.green.shade700
+                                : Colors.grey.shade800),
+                        SizedBox(width: 12),
+                        Text(
+                          'Price: Low to High',
+                          style: TextStyle(
+                            color: sortOption == 'Price: Low to High'
+                                ? Colors.green.shade700
+                                : Colors.grey.shade800,
+                            fontWeight: sortOption == 'Price: Low to High'
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'Price: High to Low',
+                    child: Row(
+                      children: [
+                        Icon(Icons.arrow_downward,
+                            size: 18,
+                            color: sortOption == 'Price: High to Low'
+                                ? Colors.green.shade700
+                                : Colors.grey.shade800),
+                        SizedBox(width: 12),
+                        Text(
+                          'Price: High to Low',
+                          style: TextStyle(
+                            color: sortOption == 'Price: High to Low'
+                                ? Colors.green.shade700
+                                : Colors.grey.shade800,
+                            fontWeight: sortOption == 'Price: High to Low'
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Icon(Icons.sort, color: Colors.white, size: 24),
+                ),
+              ),
+              SizedBox(width: 6),
+            ],
+          ),
+        ),
+      ),
       body: _buildMainContent(),
       floatingActionButton: showScrollToTop ? _buildScrollToTopButton() : null,
     );
@@ -669,55 +808,6 @@ class SubcategoryPageState extends State<SubcategoryPage> {
     } else {
       return buildBody();
     }
-  }
-
-  PreferredSizeWidget buildAppBar() {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.green.shade700,
-      flexibleSpace: _buildAppBarGradient(),
-      title: Text(
-        widget.categoryName,
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
-        ),
-      ),
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.search, color: Colors.white),
-          onPressed: () => _showSearch(context),
-        ),
-        _buildCartButton(),
-        SizedBox(width: 8),
-      ],
-    );
-  }
-
-  Widget _buildAppBarGradient() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.green.shade700, Colors.green.shade900],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCartButton() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-
-      ],
-    );
   }
 
   Widget _buildScrollToTopButton() {
@@ -745,9 +835,7 @@ class SubcategoryPageState extends State<SubcategoryPage> {
   Widget buildBody() {
     return Row(
       children: [
-        // Side navigation for subcategories
         buildSideNavigation(),
-        // Main content area for products
         Expanded(
           child: Container(
             color: Color(0xFFF8F9FA),
@@ -760,66 +848,81 @@ class SubcategoryPageState extends State<SubcategoryPage> {
 
   Widget buildSideNavigation() {
     return Container(
-      width: MediaQuery.of(context).size.width * 0.35, // Adjust width as needed
-      color: Colors.white,
-      // Adding padding at the top of the entire side navigation
-      padding: EdgeInsets.only(top: 100.0),
+      width: MediaQuery.of(context).size.width * 0.32,
+      color: Colors.grey[50],
+      padding: EdgeInsets.only(bottom: 1.0),
       child: Column(
         children: [
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
-              ),
-            ),
-            child: Text(
-              'Subcategories',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Colors.green.shade800,
-              ),
-            ),
-          ),
           Expanded(
             child: ListView.builder(
-              padding: EdgeInsets.zero,
+              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
               itemCount: subcategories.length,
               itemBuilder: (context, index) {
                 final subcategory = subcategories[index];
-                final bool isSelected = selectedSubcategoryId == subcategory['id'];
+                final bool isSelected =
+                    selectedSubcategoryId == subcategory['id'];
 
-                return Container(
-                  decoration: BoxDecoration(
-                    color: isSelected ? Colors.green.shade50 : Colors.white,
-                    border: Border(
-                      left: BorderSide(
-                        color: isSelected ? Colors.green.shade700 : Colors.transparent,
-                        width: 3,
-                      ),
-                      bottom: BorderSide(
-                        color: Colors.grey.shade200,
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: ListTile(
-                    dense: true,
-                    visualDensity: VisualDensity(horizontal: 0, vertical: -4),
-                    title: Text(
-                      subcategory['name'],
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? Colors.green.shade700 : Colors.grey.shade800,
-                      ),
-                    ),
-                    trailing: isSelected
-                        ? Icon(Icons.chevron_right, color: Colors.green.shade700, size: 15)
-                        : null,
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
                     onTap: () => onSubcategorySelected(subcategory['id']),
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 180),
+                      curve: Curves.easeInOut,
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.green.shade50 : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.green.shade700
+                              : Colors.grey.shade200,
+                          width: isSelected ? 2 : 1,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: Colors.green.withOpacity(0.08),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      padding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                      child: Row(
+                        children: [
+                          if (isSelected)
+                            Container(
+                              width: 6,
+                              height: 6,
+                              margin: EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade700,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          Expanded(
+                            child: Text(
+                              subcategory['name'],
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.green.shade700
+                                    : Colors.grey.shade800,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
@@ -925,12 +1028,11 @@ class SubcategoryPageState extends State<SubcategoryPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-
           SizedBox(height: 24),
           Text(
             'No products available',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade800,
             ),
@@ -940,7 +1042,7 @@ class SubcategoryPageState extends State<SubcategoryPage> {
             'We couldn\'t find any products in this category',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 12,
               color: Colors.grey.shade600,
             ),
           ),
@@ -949,7 +1051,10 @@ class SubcategoryPageState extends State<SubcategoryPage> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: Icon(Icons.arrow_back,),
+            icon: Icon(
+              Icons.arrow_back,
+              color: Colors.black,
+            ),
             label: Text('Browse Categories'),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.green.shade700,
@@ -966,12 +1071,9 @@ class SubcategoryPageState extends State<SubcategoryPage> {
   }
 
   Widget buildProductsGrid() {
-    // Find the name of the selected subcategory
-    final String selectedName = subcategories
-        .firstWhere(
-            (subcategory) => subcategory['id'] == selectedSubcategoryId,
-        orElse: () => {'name': ''}
-    )['name'];
+    final String selectedName = subcategories.firstWhere(
+        (subcategory) => subcategory['id'] == selectedSubcategoryId,
+        orElse: () => {'name': ''})['name'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1008,7 +1110,8 @@ class SubcategoryPageState extends State<SubcategoryPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ItemPage(urlName: itemDetailURL),
+                          builder: (context) =>
+                              ItemPage(urlName: itemDetailURL),
                         ),
                       );
                     } else {
@@ -1049,7 +1152,6 @@ class SubcategoryPageState extends State<SubcategoryPage> {
                   color: Colors.grey.shade600,
                 ),
               ),
-              buildSortDropdown(),
             ],
           ),
         ],
@@ -1083,17 +1185,21 @@ class SubcategoryPageState extends State<SubcategoryPage> {
           value: 'Latest',
           child: Row(
             children: [
-              Icon(
-                  Icons.access_time,
+              Icon(Icons.access_time,
                   size: 18,
-                  color: sortOption == 'Latest' ? Colors.green.shade700 : Colors.grey.shade800
-              ),
+                  color: sortOption == 'Latest'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800),
               SizedBox(width: 12),
               Text(
                 'Latest',
                 style: TextStyle(
-                  color: sortOption == 'Latest' ? Colors.green.shade700 : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Latest' ? FontWeight.bold : FontWeight.normal,
+                  color: sortOption == 'Latest'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800,
+                  fontWeight: sortOption == 'Latest'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
             ],
@@ -1103,17 +1209,21 @@ class SubcategoryPageState extends State<SubcategoryPage> {
           value: 'Price: Low to High',
           child: Row(
             children: [
-              Icon(
-                  Icons.arrow_upward,
+              Icon(Icons.arrow_upward,
                   size: 18,
-                  color: sortOption == 'Price: Low to High' ? Colors.green.shade700 : Colors.grey.shade800
-              ),
+                  color: sortOption == 'Price: Low to High'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800),
               SizedBox(width: 12),
               Text(
                 'Price: Low to High',
                 style: TextStyle(
-                  color: sortOption == 'Price: Low to High' ? Colors.green.shade700 : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Price: Low to High' ? FontWeight.bold : FontWeight.normal,
+                  color: sortOption == 'Price: Low to High'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800,
+                  fontWeight: sortOption == 'Price: Low to High'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
             ],
@@ -1123,72 +1233,27 @@ class SubcategoryPageState extends State<SubcategoryPage> {
           value: 'Price: High to Low',
           child: Row(
             children: [
-              Icon(
-                  Icons.arrow_downward,
+              Icon(Icons.arrow_downward,
                   size: 18,
-                  color: sortOption == 'Price: High to Low' ? Colors.green.shade700 : Colors.grey.shade800
-              ),
+                  color: sortOption == 'Price: High to Low'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800),
               SizedBox(width: 12),
               Text(
                 'Price: High to Low',
                 style: TextStyle(
-                  color: sortOption == 'Price: High to Low' ? Colors.green.shade700 : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Price: High to Low' ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'Popular',
-          child: Row(
-            children: [
-              Icon(
-                  Icons.favorite,
-                  size: 18,
-                  color: sortOption == 'Popular' ? Colors.green.shade700 : Colors.grey.shade800
-              ),
-              SizedBox(width: 12),
-              Text(
-                'Popular',
-                style: TextStyle(
-                  color: sortOption == 'Popular' ? Colors.green.shade700 : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Popular' ? FontWeight.bold : FontWeight.normal,
+                  color: sortOption == 'Price: High to Low'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800,
+                  fontWeight: sortOption == 'Price: High to Low'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
             ],
           ),
         ),
       ],
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.sort, size: 16, color: Colors.grey.shade800),
-            SizedBox(width: 4),
-            Text(
-              'Sort',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade800,
-              ),
-            ),
-            SizedBox(width: 4),
-            Icon(Icons.arrow_drop_down, size: 20, color: Colors.grey.shade800),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1198,7 +1263,8 @@ class ProductCard extends StatelessWidget {
   final String imageUrl;
   final VoidCallback onTap;
 
-  const ProductCard({super.key, 
+  const ProductCard({
+    super.key,
     required this.name,
     required this.imageUrl,
     required this.onTap,
@@ -1223,17 +1289,17 @@ class ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image with gradient overlay
             Expanded(
               child: Stack(
                 children: [
-                  // Product Image
                   Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(16)),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(16)),
                       child: Image.network(
                         imageUrl,
                         fit: BoxFit.cover,
@@ -1261,7 +1327,6 @@ class ProductCard extends StatelessWidget {
                         color: Colors.white.withOpacity(0.9),
                         shape: BoxShape.circle,
                       ),
-
                     ),
                   ),
                 ],
@@ -1284,7 +1349,6 @@ class ProductCard extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
-
                 ],
               ),
             ),
@@ -1295,7 +1359,6 @@ class ProductCard extends StatelessWidget {
   }
 }
 
-// Product search delegate
 class ProductSearchDelegate extends SearchDelegate<String> {
   final List<dynamic> products;
 
@@ -1358,7 +1421,10 @@ class ProductSearchDelegate extends SearchDelegate<String> {
     }
 
     final filteredProducts = products.where((product) {
-      return product['name'].toString().toLowerCase().contains(query.toLowerCase());
+      return product['name']
+          .toString()
+          .toLowerCase()
+          .contains(query.toLowerCase());
     }).toList();
 
     if (filteredProducts.isEmpty) {
@@ -1443,6 +1509,7 @@ class ProductSearchDelegate extends SearchDelegate<String> {
     );
   }
 }
+
 class ProductListPage extends StatefulWidget {
   final String categoryName;
   final int categoryId;
@@ -1490,7 +1557,8 @@ class _ProductListPageState extends State<ProductListPage> {
       });
 
       final response = await http.get(
-        Uri.parse('https://eclcommerce.ernestchemists.com.gh/api/product-categories/${widget.categoryId}'),
+        Uri.parse(
+            'https://eclcommerce.ernestchemists.com.gh/api/product-categories/${widget.categoryId}'),
       );
 
       if (response.statusCode == 200) {
@@ -1524,30 +1592,24 @@ class _ProductListPageState extends State<ProductListPage> {
     setState(() {
       sortOption = option;
 
-      // Apply sorting logic based on the selected option
       switch (option) {
         case 'Price: Low to High':
           products.sort((a, b) {
-            final double priceA = double.tryParse(a['price']?.toString() ?? '0') ?? 0;
-            final double priceB = double.tryParse(b['price']?.toString() ?? '0') ?? 0;
+            final double priceA =
+                double.tryParse(a['price']?.toString() ?? '0') ?? 0;
+            final double priceB =
+                double.tryParse(b['price']?.toString() ?? '0') ?? 0;
             return priceA.compareTo(priceB);
           });
           break;
         case 'Price: High to Low':
           products.sort((a, b) {
-            final double priceA = double.tryParse(a['price']?.toString() ?? '0') ?? 0;
-            final double priceB = double.tryParse(b['price']?.toString() ?? '0') ?? 0;
+            final double priceA =
+                double.tryParse(a['price']?.toString() ?? '0') ?? 0;
+            final double priceB =
+                double.tryParse(b['price']?.toString() ?? '0') ?? 0;
             return priceB.compareTo(priceA);
           });
-          break;
-        case 'Popular':
-        // In a real app, you would sort by popularity metrics
-        // For now, we'll leave it as is or could use a random sorting for demonstration
-          break;
-        case 'Latest':
-        default:
-        // Assuming the most recent products are already at the top of the API response
-        // If not, you could sort by date if available in the product data
           break;
       }
     });
@@ -1585,7 +1647,6 @@ class _ProductListPageState extends State<ProductListPage> {
           IconButton(
             icon: Icon(Icons.search, color: Colors.white),
             onPressed: () {
-              // Implement search functionality
               showSearch(
                 context: context,
                 delegate: ProductSearchDelegate(products),
@@ -1594,39 +1655,7 @@ class _ProductListPageState extends State<ProductListPage> {
           ),
           Stack(
             alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.shopping_cart_outlined, color: Colors.white),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Cart()),
-                ),
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
-                  ),
-                  child: Text(
-                    '0', // Replace with actual cart count
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ],
+            children: [],
           ),
           SizedBox(width: 8),
         ],
@@ -1660,8 +1689,6 @@ class _ProductListPageState extends State<ProductListPage> {
                     ),
                   ],
                 ),
-                // Sort dropdown
-                _buildSortDropdown(),
               ],
             ),
           ),
@@ -1672,17 +1699,17 @@ class _ProductListPageState extends State<ProductListPage> {
       ),
       floatingActionButton: showScrollToTop
           ? FloatingActionButton(
-        mini: true,
-        backgroundColor: Colors.green.shade700,
-        child: Icon(Icons.keyboard_arrow_up, color: Colors.white),
-        onPressed: () {
-          scrollController.animateTo(
-            0,
-            duration: Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        },
-      )
+              mini: true,
+              backgroundColor: Colors.green.shade700,
+              child: Icon(Icons.keyboard_arrow_up, color: Colors.white),
+              onPressed: () {
+                scrollController.animateTo(
+                  0,
+                  duration: Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                );
+              },
+            )
           : null,
     );
   }
@@ -1826,7 +1853,7 @@ class _ProductListPageState extends State<ProductListPage> {
           Text(
             'No products available',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade800,
             ),
@@ -1845,7 +1872,10 @@ class _ProductListPageState extends State<ProductListPage> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: Icon(Icons.arrow_back),
+            icon: Icon(
+              Icons.arrow_back,
+              color: Colors.black,
+            ),
             label: Text('Browse Categories'),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.green.shade700,
@@ -1875,17 +1905,21 @@ class _ProductListPageState extends State<ProductListPage> {
           value: 'Latest',
           child: Row(
             children: [
-              Icon(
-                  Icons.access_time,
+              Icon(Icons.access_time,
                   size: 18,
-                  color: sortOption == 'Latest' ? Colors.green.shade700 : Colors.grey.shade800
-              ),
+                  color: sortOption == 'Latest'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800),
               SizedBox(width: 12),
               Text(
                 'Latest',
                 style: TextStyle(
-                  color: sortOption == 'Latest' ? Colors.green.shade700 : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Latest' ? FontWeight.bold : FontWeight.normal,
+                  color: sortOption == 'Latest'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800,
+                  fontWeight: sortOption == 'Latest'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
             ],
@@ -1895,17 +1929,21 @@ class _ProductListPageState extends State<ProductListPage> {
           value: 'Price: Low to High',
           child: Row(
             children: [
-              Icon(
-                  Icons.arrow_upward,
+              Icon(Icons.arrow_upward,
                   size: 18,
-                  color: sortOption == 'Price: Low to High' ? Colors.green.shade700 : Colors.grey.shade800
-              ),
+                  color: sortOption == 'Price: Low to High'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800),
               SizedBox(width: 12),
               Text(
                 'Price: Low to High',
                 style: TextStyle(
-                  color: sortOption == 'Price: Low to High' ? Colors.green.shade700 : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Price: Low to High' ? FontWeight.bold : FontWeight.normal,
+                  color: sortOption == 'Price: Low to High'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800,
+                  fontWeight: sortOption == 'Price: Low to High'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
             ],
@@ -1915,37 +1953,21 @@ class _ProductListPageState extends State<ProductListPage> {
           value: 'Price: High to Low',
           child: Row(
             children: [
-              Icon(
-                  Icons.arrow_downward,
+              Icon(Icons.arrow_downward,
                   size: 18,
-                  color: sortOption == 'Price: High to Low' ? Colors.green.shade700 : Colors.grey.shade800
-              ),
+                  color: sortOption == 'Price: High to Low'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800),
               SizedBox(width: 12),
               Text(
                 'Price: High to Low',
                 style: TextStyle(
-                  color: sortOption == 'Price: High to Low' ? Colors.green.shade700 : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Price: High to Low' ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'Popular',
-          child: Row(
-            children: [
-              Icon(
-                  Icons.favorite,
-                  size: 18,
-                  color: sortOption == 'Popular' ? Colors.green.shade700 : Colors.grey.shade800
-              ),
-              SizedBox(width: 12),
-              Text(
-                'Popular',
-                style: TextStyle(
-                  color: sortOption == 'Popular' ? Colors.green.shade700 : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Popular' ? FontWeight.bold : FontWeight.normal,
+                  color: sortOption == 'Price: High to Low'
+                      ? Colors.green.shade700
+                      : Colors.grey.shade800,
+                  fontWeight: sortOption == 'Price: High to Low'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
             ],
@@ -1968,11 +1990,11 @@ class _ProductListPageState extends State<ProductListPage> {
         child: Row(
           children: [
             Icon(Icons.sort, size: 16, color: Colors.grey.shade800),
-            SizedBox(width: 4),
+            SizedBox(width: 3),
             Text(
               'Sort',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 10,
                 color: Colors.grey.shade800,
               ),
             ),
@@ -1984,5 +2006,3 @@ class _ProductListPageState extends State<ProductListPage> {
     );
   }
 }
-
-

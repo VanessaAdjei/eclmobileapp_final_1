@@ -135,7 +135,7 @@ class _ProfileState extends State<Profile> {
               ),
               onPressed: () {
                 Navigator.pop(context);
-                AuthService.signOut().then((_) {
+                AuthService.logout().then((_) {
                   Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (context) => LoggedOutScreen())

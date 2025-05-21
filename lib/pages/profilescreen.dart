@@ -64,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final status = await Permission.photos.request();
       return status.isGranted;
     } else if (Platform.isIOS) {
-      return true; // iOS only needs declaration in Info.plist
+      return true;
     }
     return false;
   }
@@ -226,12 +226,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     String name = await secureStorage.read(key: 'userName') ?? "User";
     String email = await secureStorage.read(key: 'userEmail') ?? "No email available";
-    String phoneNumber = await secureStorage.read(key: 'userPhone') ?? "";
+    String? phoneNumber = await secureStorage.read(key: 'userPhoneNumber') ??
+        await secureStorage.read(key: 'userPhoneNumber') ??
+        await secureStorage.read(key: 'userPhone');
 
     setState(() {
       _userName = name;
       _userEmail = email;
-      _phoneNumber = phoneNumber;
+      _phoneNumber = phoneNumber!;
 
       _userNameController.text = name;
       _userEmailController.text = email;
@@ -260,7 +262,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(40.0), // Slim app bar height
+        preferredSize: const Size.fromHeight(40.0),
         child: AppBar(
           backgroundColor: Colors.green.shade700,
           elevation: 0,

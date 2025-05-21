@@ -1,5 +1,8 @@
+// pages/homepage.dart
+import 'dart:math';
 import 'package:eclapp/pages/signinpage.dart';
 import 'package:eclapp/pages/storelocation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +19,9 @@ import 'clickableimage.dart';
 import 'itemdetail.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'search_results_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,12 +36,10 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = false;
   final RefreshController _refreshController = RefreshController();
   bool _allContentLoaded = false;
-
   final CacheService _cache = CacheService();
   static const String _productsCacheKey = 'home_products';
-
-
   TextEditingController searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
@@ -52,25 +56,6 @@ class _HomePageState extends State<HomePage> {
       }
     } else {
       print("Permission denied.");
-    }
-  }
-
-
-  Future<void> addToCartWithAuth(BuildContext context, Product product) async {
-    if (await AuthService.isLoggedIn()) {
-
-      _addToCart(context, product);
-    } else {
-
-      final result = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SignInScreen(
-            returnTo: ModalRoute.of(context)?.settings.name,
-            onSuccess: () => _addToCart(context, product),
-          ),
-        ),
-      );
     }
   }
 
@@ -101,28 +86,29 @@ class _HomePageState extends State<HomePage> {
 
     return result ?? false;
   }
+
   _launchWhatsApp(String phoneNumber, String message) async {
     if (phoneNumber.isEmpty || message.isEmpty) {
-
       print("Phone number or message is empty");
       return;
     }
 
     if (!phoneNumber.startsWith('+')) {
-      print("Phone number must include the country code (e.g., +233504518047)");
+      print("Phone number must include the country code (e.g., +233*******)");
       return;
     }
 
-    String whatsappUrl = 'whatsapp://send?phone=$phoneNumber&text=${Uri.encodeComponent(message)}';
+    String whatsappUrl =
+        'whatsapp://send?phone=$phoneNumber&text=${Uri.encodeComponent(message)}';
 
     if (await canLaunch(whatsappUrl)) {
       await launch(whatsappUrl);
     } else {
       print("WhatsApp is not installed or cannot be launched.");
-      showTopSnackBar(context, 'Could not open WhatsApp. Please ensure it is installed.');
+      showTopSnackBar(
+          context, 'Could not open WhatsApp. Please ensure it is installed.');
     }
   }
-
 
   Future<void> _loadAllContent() async {
     if (_allContentLoaded && !_cache.shouldRefreshCache()) return;
@@ -134,7 +120,6 @@ class _HomePageState extends State<HomePage> {
         Future.delayed(Duration(milliseconds: 500)),
       ]);
     } catch (e) {
-      // Try to show cached data if available
       final cachedProducts = _cache.getCachedData(_productsCacheKey);
       if (cachedProducts != null) {
         setState(() {
@@ -152,8 +137,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> loadProducts() async {
     try {
       setState(() => _isLoading = true);
-
-      // Check cache first
       if (!_cache.shouldRefreshCache()) {
         final cachedProducts = _cache.getCachedData(_productsCacheKey);
         if (cachedProducts != null) {
@@ -165,7 +148,6 @@ class _HomePageState extends State<HomePage> {
         }
       }
 
-      // Fetch fresh data
       List<Product> loadedProducts = await AuthService().fetchProducts();
       _cache.cacheData(_productsCacheKey, loadedProducts);
 
@@ -180,7 +162,6 @@ class _HomePageState extends State<HomePage> {
       _refreshController.refreshCompleted();
     }
   }
-
 
   void makePhoneCall(String phoneNumber) async {
     final Uri callUri = Uri.parse("tel:$phoneNumber");
@@ -214,10 +195,10 @@ class _HomePageState extends State<HomePage> {
               ),
               ListTile(
                 leading: Icon(Icons.call_end_rounded, color: Colors.green),
-                title: Text('WhatsApp'),
                 onTap: () {
                   Navigator.pop(context);
-                  _launchWhatsApp(phoneNumber, "Hello, I'm interested in your products!");
+                  _launchWhatsApp(
+                      phoneNumber, "Hello, I'm interested in your products!");
                 },
               ),
             ],
@@ -227,30 +208,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-  void _filterProducts(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        filteredProducts = List.from(products);
-      });
-      return;
-    }
-
-    setState(() {
-      filteredProducts = products
-          .where((product) => product.name.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    });
-  }
-
-
   @override
   void initState() {
     super.initState();
     _loadAllContent();
-    searchController.addListener(() {
-      _filterProducts(searchController.text);
-    });
     _scrollController.addListener(() {
       if (_scrollController.offset > 100 && !_isScrolled) {
         setState(() {
@@ -264,7 +225,8 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void showTopSnackBar(BuildContext context, String message, {Duration? duration}) {
+  void showTopSnackBar(BuildContext context, String message,
+      {Duration? duration}) {
     final overlay = Overlay.of(context);
 
     late final OverlayEntry overlayEntry;
@@ -309,34 +271,173 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-
-
   @override
   void dispose() {
     searchController.dispose();
     super.dispose();
   }
 
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: TypeAheadField<Product>(
+        textFieldConfiguration: TextFieldConfiguration(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'Search medicines, products...',
+            prefixIcon: Icon(Icons.search, color: Colors.grey),
+            filled: true,
+            fillColor: Colors.grey[100],
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {});
+                    },
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: EdgeInsets.symmetric(vertical: 12),
+          ),
+          onSubmitted: (value) {
+            if (value.trim().isNotEmpty) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SearchResultsPage(
+                    query: value.trim(),
+                    products: products,
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+        suggestionsCallback: (pattern) async {
+          if (pattern.isEmpty) return [];
+          if (pattern.length < 3) return [];
+          final matches = products
+              .where((product) =>
+                  product.name.toLowerCase().contains(pattern.toLowerCase()) ||
+                  (product.description
+                      .toLowerCase()
+                      .contains(pattern.toLowerCase())))
+              .toList();
+          if (matches.length > 6) {
+            final result = [
+              Product(
+                id: -1,
+                name: '__VIEW_MORE__',
+                description: '',
+                urlName: '',
+                status: '',
+                price: '',
+                thumbnail: '',
+                quantity: '',
+                category: '',
+                route: '',
+              ),
+              ...matches.take(6),
+            ];
+            print('TypeAhead suggestions (with View All): ' +
+                result.map((e) => e.name).toList().toString());
+            return result;
+          }
+          print('TypeAhead suggestions: ' +
+              matches.map((e) => e.name).toList().toString());
+          return matches;
+        },
+        itemBuilder: (context, Product suggestion) {
+          if (suggestion.name == '__VIEW_MORE__') {
+            return Container(
+              color: Colors.green.withOpacity(0.08),
+              child: ListTile(
+                leading: Icon(Icons.list, color: Colors.green[700]),
+                title: Text(
+                  'View All Results',
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            );
+          }
+          return ListTile(
+            leading: suggestion.thumbnail.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: suggestion.thumbnail,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    errorWidget: (context, url, error) =>
+                        Icon(Icons.medical_services),
+                  )
+                : Icon(Icons.medical_services),
+            title: Text(suggestion.name),
+            subtitle: Text('GHS ${suggestion.price}'),
+          );
+        },
+        onSuggestionSelected: (Product suggestion) {
+          if (suggestion.name == '__VIEW_MORE__') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SearchResultsPage(
+                  query: _searchController.text,
+                  products: products,
+                ),
+              ),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ItemPage(urlName: suggestion.urlName),
+              ),
+            );
+          }
+        },
+        noItemsFoundBuilder: (context) => Padding(
+          padding: const EdgeInsets.all(12.0),
+          child:
+              Text('No products found', style: TextStyle(color: Colors.grey)),
+        ),
+        hideOnEmpty: true,
+        hideOnLoading: false,
+        debounceDuration: Duration(milliseconds: 300),
+        suggestionsBoxDecoration: SuggestionsBoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        suggestionsBoxVerticalOffset: 0,
+        suggestionsBoxController: null,
+      ),
+    );
+  }
 
   Widget _buildActionCards() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
         children: [
-          // Card 1: Meet the Pharmacists
           Expanded(
             child: _buildActionCard(
               icon: Icons.people,
               title: "Meet Our Pharmacists",
               color: Colors.blue[600]!,
-              onTap: () {
-                // Add navigation logic
-              },
+              onTap: () {},
             ),
           ),
           SizedBox(width: 12),
-
-          // Card 2: Store Locator
           Expanded(
             child: _buildActionCard(
               icon: Icons.location_on,
@@ -351,8 +452,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           SizedBox(width: 12),
-
-          // Card 3: Submit Prescription
           Expanded(
             child: _buildActionCard(
               icon: Icons.contact_support_rounded,
@@ -381,7 +480,7 @@ class _HomePageState extends State<HomePage> {
           maxWidth: 100,
           minHeight: 100,
         ),
-        padding: const EdgeInsets.all(10), // Reduced padding
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(10),
@@ -391,20 +490,20 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(8), // Smaller icon padding
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 20), // Smaller icon
+              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(height: 6), // Reduced spacing
+            const SizedBox(height: 6),
             Text(
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey[800],
-                fontSize: 11, // Smaller font
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
               maxLines: 2,
@@ -416,10 +515,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   Widget _buildPopularProducts() {
     List<Map<String, String>> popularProducts = [
-
       {'name': 'Product', 'image': 'assets/images/prod2.png'},
       {'name': 'Product', 'image': 'assets/images/prod3.png'},
       {'name': 'Product', 'image': 'assets/images/prod4.png'},
@@ -429,8 +526,6 @@ class _HomePageState extends State<HomePage> {
       {'name': 'Product', 'image': 'assets/images/prod2.png'},
       {'name': 'Product', 'image': 'assets/images/prod5.png'},
       {'name': 'Product', 'image': 'assets/images/prod4.png'},
-
-
     ];
 
     return Column(
@@ -454,7 +549,9 @@ class _HomePageState extends State<HomePage> {
             children: popularProducts.map((product) {
               return GestureDetector(
                 onTap: () {
-                  print("Tapped on ${product['name']}");
+                  if (kDebugMode) {
+                    print("Tapped on ${product['name']}");
+                  }
                 },
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -465,8 +562,8 @@ class _HomePageState extends State<HomePage> {
                         Image.asset(
                           product['image']!,
                           fit: BoxFit.contain,
-                          height: 90, // Adjust height
-                          width: 80,  // Adjust width
+                          height: 90,
+                          width: 80,
                         ),
                         Container(
                           decoration: BoxDecoration(
@@ -490,23 +587,31 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-
   Widget _buildProductCard(Product product) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-
-    double cardWidth = screenWidth * 0.45;
-    double cardHeight = screenHeight * 0.38;
+    double cardWidth = screenWidth * (screenWidth < 600 ? 0.45 : 0.60);
+    double cardHeight = screenHeight * (screenHeight < 800 ? 0.15 : 0.20);
+    double imageHeight = cardHeight * (cardHeight < 800 ? 0.5 : 1);
+    double fontSize = screenWidth * 0.032;
+    double paddingValue = screenWidth * 0.02;
 
     return Container(
       width: cardWidth,
       height: cardHeight,
-      margin: EdgeInsets.all(screenWidth * 0.015),
+      margin: EdgeInsets.all(screenWidth * 0.019),
       decoration: BoxDecoration(
-        color: Colors.white,
-
+        color: Colors.white30,
+        borderRadius: BorderRadius.circular(1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -519,74 +624,65 @@ class _HomePageState extends State<HomePage> {
           );
         },
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
-              height: cardHeight * 0.2,
-              padding: EdgeInsets.all(1),
+              height: imageHeight,
+              padding: EdgeInsets.all(paddingValue * 0.01),
+              constraints: BoxConstraints(
+                maxHeight: imageHeight,
+              ),
               child: ClipRRect(
-                child: Image.network(
-                  product.thumbnail,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                child: CachedNetworkImage(
+                  imageUrl: product.thumbnail,
                   fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    );
-                  },
-                  errorBuilder: (_, __, ___) => Container(
+                  placeholder: (context, url) => Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  errorWidget: (_, __, ___) => Container(
                     color: Colors.grey[200],
                     child: Center(
-                      child: Icon(Icons.broken_image, size: 40),
+                      child: Icon(Icons.broken_image, size: 30),
                     ),
                   ),
                 ),
               ),
             ),
-
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 3.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Product name
-                    Text(
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: paddingValue * 0.8,
+                vertical: paddingValue * 0.3,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: cardHeight < 600 ? 30 : 50,
+                    child: Text(
                       product.name,
-                      maxLines: 2,
+                      maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: max(fontSize * 1.1, 12),
                         fontWeight: FontWeight.bold,
-                        color: Colors.green[800],
+                        color: Colors.black,
+                        height: 1.2,
                       ),
                     ),
-
-                    // Price and add to cart button
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            '${product.price} GHS',
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.03,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ],
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'GHS ${product.price}',
+                    style: TextStyle(
+                      fontSize: max(fontSize * 0.95, 11),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green[800],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -594,7 +690,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -604,281 +699,408 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   Widget _buildMainContent() {
     return Stack(
       children: [
         SmartRefresher(
-            controller: _refreshController,
-            onRefresh: loadProducts,
-            child: CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: 50.0,
-                  floating: false,
-                  automaticallyImplyLeading: false,
-                  pinned: true,
-                  backgroundColor: Colors.green.shade700,
-                  flexibleSpace: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return FlexibleSpaceBar(
-                        centerTitle: false,
-                        titlePadding: EdgeInsets.only(left: 16, bottom: 10),
-                        title: _isScrolled
-                            ? SizedBox(
-                          height: 40,
-                          child: TextField(
-                            controller: searchController,
-                            decoration: InputDecoration(
-                              hintText: 'Search products...',
-                              hintStyle: TextStyle(color: Colors.black.withOpacity(0.6)),
-                              prefixIcon: Icon(Icons.search, color: Colors.black),
-                              filled: true,
-                              fillColor: Colors.white30,
-                              contentPadding: EdgeInsets.symmetric(vertical: 0),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                                borderSide: BorderSide.none,
+          controller: _refreshController,
+          onRefresh: loadProducts,
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 50.0,
+                floating: false,
+                automaticallyImplyLeading: false,
+                pinned: true,
+                backgroundColor: Colors.green.shade700,
+                flexibleSpace: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return FlexibleSpaceBar(
+                      centerTitle: false,
+                      titlePadding: EdgeInsets.only(left: 16, bottom: 10),
+                      title: _isScrolled
+                          ? SizedBox(
+                              height: 40,
+                              child: TypeAheadField<Product>(
+                                textFieldConfiguration: TextFieldConfiguration(
+                                  controller: _searchController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Search products...',
+                                    hintStyle: TextStyle(
+                                        color: Colors.black.withOpacity(0.6)),
+                                    prefixIcon:
+                                        Icon(Icons.search, color: Colors.black),
+                                    filled: true,
+                                    fillColor: Colors.white30,
+                                    contentPadding:
+                                        EdgeInsets.symmetric(vertical: 0),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  onSubmitted: (value) {
+                                    if (value.trim().isNotEmpty) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              SearchResultsPage(
+                                            query: value.trim(),
+                                            products: products,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                                suggestionsCallback: (pattern) async {
+                                  if (pattern.isEmpty) return [];
+                                  if (pattern.length < 3) return [];
+                                  final matches = products
+                                      .where((product) =>
+                                          product.name.toLowerCase().contains(
+                                              pattern.toLowerCase()) ||
+                                          (product.description
+                                              .toLowerCase()
+                                              .contains(pattern.toLowerCase())))
+                                      .toList();
+                                  if (matches.length > 6) {
+                                    final result = [
+                                      Product(
+                                        id: -1,
+                                        name: '__VIEW_MORE__',
+                                        description: '',
+                                        urlName: '',
+                                        status: '',
+                                        price: '',
+                                        thumbnail: '',
+                                        quantity: '',
+                                        category: '',
+                                        route: '',
+                                      ),
+                                      ...matches.take(6),
+                                    ];
+                                    print(
+                                        'TypeAhead suggestions (with View All): ' +
+                                            result
+                                                .map((e) => e.name)
+                                                .toList()
+                                                .toString());
+                                    return result;
+                                  }
+                                  print('TypeAhead suggestions: ' +
+                                      matches
+                                          .map((e) => e.name)
+                                          .toList()
+                                          .toString());
+                                  return matches;
+                                },
+                                itemBuilder: (context, Product suggestion) {
+                                  if (suggestion.name == '__VIEW_MORE__') {
+                                    return Container(
+                                      color: Colors.green.withOpacity(0.08),
+                                      child: ListTile(
+                                        leading: Icon(Icons.list,
+                                            color: Colors.green[700]),
+                                        title: Text(
+                                          'View All Results',
+                                          style: TextStyle(
+                                            color: Colors.green[700],
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return ListTile(
+                                    leading: suggestion.thumbnail.isNotEmpty
+                                        ? CachedNetworkImage(
+                                            imageUrl: suggestion.thumbnail,
+                                            width: 40,
+                                            height: 40,
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) =>
+                                                SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2),
+                                            ),
+                                            errorWidget: (context, url,
+                                                    error) =>
+                                                Icon(Icons.medical_services),
+                                          )
+                                        : Icon(Icons.medical_services),
+                                    title: Text(suggestion.name),
+                                    subtitle: Text('GHS ${suggestion.price}'),
+                                  );
+                                },
+                                onSuggestionSelected: (Product suggestion) {
+                                  if (suggestion.name == '__VIEW_MORE__') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => SearchResultsPage(
+                                          query: _searchController.text,
+                                          products: products,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ItemPage(
+                                            urlName: suggestion.urlName),
+                                      ),
+                                    );
+                                  }
+                                },
+                                noItemsFoundBuilder: (context) => Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Text('No products found',
+                                      style: TextStyle(color: Colors.grey)),
+                                ),
+                                hideOnEmpty: true,
+                                hideOnLoading: false,
+                                debounceDuration: Duration(milliseconds: 300),
+                                suggestionsBoxDecoration:
+                                    SuggestionsBoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                suggestionsBoxVerticalOffset: 0,
+                                suggestionsBoxController: null,
                               ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 40),
+                                  child: SizedBox(
+                                    height: 110,
+                                    width: 100,
+                                    child: Image.asset(
+                                      'assets/images/png.png',
+                                      fit: BoxFit.fitWidth,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    );
+                  },
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10.0, horizontal: 10.0),
+                  child: _buildSearchBar(),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: buildOrderMedicineCard(),
+              ),
+              SliverToBoxAdapter(
+                child: _buildActionCards(),
+              ),
+              SliverList(
+                delegate: SliverChildListDelegate(
+                  [
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 24,
+                            color: Colors.green,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Medicine',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.green[700],
+                              letterSpacing: 1.2,
+                              height: 1.3,
                             ),
                           ),
-                        )
-                            : Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 40),
-                              child: SizedBox(
-                                height: 110,
-                                width: 100,
-                                child: Image.asset(
-                                  'assets/images/png.png',
-                                  fit: BoxFit.fitWidth,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
-                    child: TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search products...',
-                        hintStyle: TextStyle(color: Colors.black.withOpacity(0.6)),
-                        prefixIcon: Icon(Icons.search, color: Colors.black),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide.none,
-                        ),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                SliverToBoxAdapter(
-                  child: buildOrderMedicineCard(),
+              ),
+              SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    if (index < 6) {
+                      return _buildProductCard(filteredProducts[index]);
+                    }
+                    return SizedBox.shrink();
+                  },
+                  childCount:
+                      filteredProducts.length > 6 ? 6 : filteredProducts.length,
                 ),
-                SliverToBoxAdapter(
-                  child: _buildActionCards(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 0,
+                  mainAxisSpacing: 0,
+                  childAspectRatio: 1.2,
                 ),
-                SliverList(
-                  delegate: SliverChildListDelegate(
-                    [
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 24,
-                              color: Colors.green,
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 1.0),
+                  child: ClickableImageButton(),
+                ),
+              ),
+              SliverList(
+                delegate: SliverChildListDelegate(
+                  [
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 24,
+                            color: Colors.green,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'First Aid',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.green[700],
+                              letterSpacing: 1.2,
+                              height: 1.3,
                             ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Medicine',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.green[700],
-                                letterSpacing: 1.2,
-                                height: 1.3,
-                              ),
-                            ),
-                          ],
-                        ),
-
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                      if (index < 6) {
-                        return _buildProductCard(filteredProducts[index]);
-                      }
-                      return SizedBox.shrink();
-                    },
-                    childCount: filteredProducts.length > 6 ? 6 : filteredProducts.length,
-                  ),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 0,
-                    mainAxisSpacing: 0,
-                    childAspectRatio: 1.2,
-                  ),
+              ),
+              SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    int adjustedIndex = index + 6;
+                    if (adjustedIndex < 12 &&
+                        adjustedIndex < filteredProducts.length) {
+                      return _buildProductCard(filteredProducts[adjustedIndex]);
+                    }
+                    return SizedBox.shrink();
+                  },
+                  childCount: filteredProducts.length > 12
+                      ? 6
+                      : (filteredProducts.length > 6
+                          ? filteredProducts.length - 6
+                          : 0),
                 ),
-
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1.0),
-                    child: ClickableImageButton(),
-                  ),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 0,
+                  mainAxisSpacing: 0,
+                  childAspectRatio: 1.2,
                 ),
-                SliverList(
-                  delegate: SliverChildListDelegate(
-                    [
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 24,
-                              color: Colors.green, // Accent line on the left
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 1.0),
+                  child: _buildPopularProducts(),
+                ),
+              ),
+              SliverList(
+                delegate: SliverChildListDelegate(
+                  [
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 24,
+                            color: Colors.green,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Other Products',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.green[700],
+                              letterSpacing: 1.2,
+                              height: 1.3,
                             ),
-                            SizedBox(width: 8),
-                            Text(
-                              'First Aid',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.green[700],
-                                letterSpacing: 1.2,
-                                height: 1.3,
-                              ),
-                            ),
-                          ],
-                        ),
-
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                      int adjustedIndex = index + 6;
-                      if (adjustedIndex < 12 && adjustedIndex < filteredProducts.length) {
-                        return _buildProductCard(filteredProducts[adjustedIndex]);
-                      }
-                      return SizedBox.shrink();
-                    },
-                    childCount: filteredProducts.length > 12
-                        ? 6
-                        : (filteredProducts.length > 6 ? filteredProducts.length - 6 : 0),
-                  ),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 0,
-                    mainAxisSpacing: 0,
-                    childAspectRatio: 1.2,
-                  ),
+              ),
+              SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    int adjustedIndex = index + 12;
+                    if (adjustedIndex < filteredProducts.length) {
+                      return _buildProductCard(filteredProducts[adjustedIndex]);
+                    }
+                    return SizedBox.shrink();
+                  },
+                  childCount: filteredProducts.length > 12
+                      ? filteredProducts.length - 12
+                      : 0,
                 ),
-
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 1.0),
-                    child: _buildPopularProducts(),
-                  ),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 0,
+                  mainAxisSpacing: 0,
+                  childAspectRatio: 1.2,
                 ),
-                SliverList(
-                  delegate: SliverChildListDelegate(
-                    [
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 24,
-                              color: Colors.green,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Other Products',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.green[700],
-                                letterSpacing: 1.2,
-                                height: 1.3,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                      ),
-                    ],
-                  ),
-                ),
-                SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                      int adjustedIndex = index + 12;
-                      if (adjustedIndex < filteredProducts.length) {
-                        return _buildProductCard(filteredProducts[adjustedIndex]);
-                      }
-                      return SizedBox.shrink();
-                    },
-                    childCount: filteredProducts.length > 12 ? filteredProducts.length - 12 : 0,
-                  ),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 0,
-                    mainAxisSpacing: 0,
-                    childAspectRatio: 1.2,
-                  ),
-                ),
-
-              ],
-            ),
+              ),
+            ],
           ),
-
-          if (_isLoading)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 20,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green[700]!),
-                  ),
+        ),
+        if (_isLoading)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 20,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green[700]!),
                 ),
               ),
             ),
-        ],
-      );
+          ),
+      ],
+    );
   }
+
   Widget _buildOptimizedSkeleton() {
     return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
@@ -886,12 +1108,10 @@ class _HomePageState extends State<HomePage> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            // AppBar placeholder
             Container(
               height: kToolbarHeight + MediaQuery.of(context).padding.top,
               color: Colors.white,
             ),
-
             // Search bar
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -903,8 +1123,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-
-            // Banner carousel
             Container(
               height: 150,
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -913,24 +1131,22 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-
-            // Action cards
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(3, (index) => Container(
-                  width: (MediaQuery.of(context).size.width - 48) / 3,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                )),
+                children: List.generate(
+                    3,
+                    (index) => Container(
+                          width: (MediaQuery.of(context).size.width - 48) / 3,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        )),
               ),
             ),
-
-            // Product grid
             GridView.builder(
               physics: NeverScrollableScrollPhysics(),
               shrinkWrap: true,
@@ -944,15 +1160,11 @@ class _HomePageState extends State<HomePage> {
               ),
               itemBuilder: (context, index) => _buildProductSkeleton(),
             ),
-
-            // Promotional banner
             Container(
               height: 120,
               margin: const EdgeInsets.all(16),
               color: Colors.white,
             ),
-
-            // Second product grid
             GridView.builder(
               physics: NeverScrollableScrollPhysics(),
               shrinkWrap: true,
@@ -966,8 +1178,6 @@ class _HomePageState extends State<HomePage> {
               ),
               itemBuilder: (context, index) => _buildProductSkeleton(),
             ),
-
-            // Popular products header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Container(
@@ -976,8 +1186,6 @@ class _HomePageState extends State<HomePage> {
                 color: Colors.white,
               ),
             ),
-
-            // Popular products list
             SizedBox(
               height: 120,
               child: ListView.builder(
@@ -996,8 +1204,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-
-            // Third product grid
             GridView.builder(
               physics: NeverScrollableScrollPhysics(),
               shrinkWrap: true,
@@ -1064,9 +1270,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 }
-
 
 class HomePageSkeleton extends StatelessWidget {
   const HomePageSkeleton({super.key});
@@ -1079,7 +1283,6 @@ class HomePageSkeleton extends StatelessWidget {
         highlightColor: Colors.grey[100]!,
         child: CustomScrollView(
           slivers: [
-            // AppBar Skeleton
             SliverAppBar(
               expandedHeight: 50.0,
               floating: false,
@@ -1127,22 +1330,22 @@ class HomePageSkeleton extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(3, (index) => Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  )),
+                  children: List.generate(
+                      3,
+                      (index) => Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          )),
                 ),
               ),
             ),
-
-            // First Product Grid Skeleton
             SliverGrid(
               delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildProductCardSkeleton(),
+                (context, index) => _buildProductCardSkeleton(),
                 childCount: 4,
               ),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -1150,8 +1353,6 @@ class HomePageSkeleton extends StatelessWidget {
                 childAspectRatio: 0.8,
               ),
             ),
-
-            // Promotional Banner Skeleton
             SliverToBoxAdapter(
               child: Container(
                 height: 120,
@@ -1162,11 +1363,9 @@ class HomePageSkeleton extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Second Product Grid Skeleton
             SliverGrid(
               delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildProductCardSkeleton(),
+                (context, index) => _buildProductCardSkeleton(),
                 childCount: 4,
               ),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -1174,8 +1373,6 @@ class HomePageSkeleton extends StatelessWidget {
                 childAspectRatio: 0.8,
               ),
             ),
-
-            // Popular Products Header
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -1186,8 +1383,6 @@ class HomePageSkeleton extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Popular Products Horizontal List
             SliverToBoxAdapter(
               child: Container(
                 height: 120,
@@ -1208,11 +1403,9 @@ class HomePageSkeleton extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Third Product Grid Skeleton
             SliverGrid(
               delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildProductCardSkeleton(),
+                (context, index) => _buildProductCardSkeleton(),
                 childCount: 4,
               ),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -1267,6 +1460,7 @@ class HomePageSkeleton extends StatelessWidget {
     );
   }
 }
+
 Widget buildOrderMedicineCard() => _OrderMedicineCard();
 
 class _OrderMedicineCard extends StatefulWidget {
@@ -1325,7 +1519,9 @@ class _OrderMedicineCardState extends State<_OrderMedicineCard> {
               borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 imageUrls[index],
-                fit: BoxFit.cover,
+                fit: BoxFit.fill,
+                cacheHeight: 300,
+                cacheWidth: (MediaQuery.of(context).size.width * 0.85).round(),
               ),
             ),
           );

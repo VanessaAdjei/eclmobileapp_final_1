@@ -1,9 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'auth_service.dart';
 import 'cartprovider.dart';
 
-class CustomBottomNav extends StatelessWidget {
+
+class CustomBottomNav extends StatefulWidget {
   const CustomBottomNav({super.key});
+
+  @override
+  State<CustomBottomNav> createState() => _CustomBottomNavState();
+}
+
+class _CustomBottomNavState extends State<CustomBottomNav> {
+  bool _userLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final loggedIn = await AuthService.isLoggedIn();
+    setState(() {
+      _userLoggedIn = loggedIn;
+    });
+  }
 
   bool _isCurrentRoute(BuildContext context, String routeName) {
     return ModalRoute.of(context)?.settings.name == routeName;
@@ -16,7 +38,7 @@ class CustomBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cart = Provider.of<CartProvider>(context); // Using Provider here
+    final cart = Provider.of<CartProvider>(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -63,7 +85,7 @@ class CustomBottomNav extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 const Icon(Icons.shopping_cart),
-                if (cart.totalItems > 0)
+                if (_userLoggedIn && cart.totalItems > 0)
                   Positioned(
                     right: -6,
                     top: -3,

@@ -1,10 +1,10 @@
+// pages/cart.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:eclapp/pages/homepage.dart';
 import 'bottomnav.dart';
 import 'cartprovider.dart';
 import 'delivery_page.dart';
-
 
 class Cart extends StatefulWidget {
   const Cart({super.key});
@@ -23,14 +23,13 @@ class _CartState extends State<Cart> {
 
   TextEditingController addressController = TextEditingController();
 
-
   @override
   void initState() {
     super.initState();
   }
 
-
-  void showTopSnackBar(BuildContext context, String message, {Duration? duration}) {
+  void showTopSnackBar(BuildContext context, String message,
+      {Duration? duration}) {
     final overlay = Overlay.of(context);
 
     late final OverlayEntry overlayEntry;
@@ -103,8 +102,12 @@ class _CartState extends State<Cart> {
     'Takoradi': ['Market Circle', 'Anaji'],
   };
 
-  List<String> pickupLocations = ['Madina Mall', 'Accra Mall', 'Kumasi City Mall', 'Takoradi Mall'];
-
+  List<String> pickupLocations = [
+    'Madina Mall',
+    'Accra Mall',
+    'Kumasi City Mall',
+    'Takoradi Mall'
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -120,23 +123,56 @@ class _CartState extends State<Cart> {
                   Container(
                     padding: EdgeInsets.only(top: topPadding),
                     color: Colors.green.shade700,
-                    child: Row(
+                    child: Column(
                       children: [
-                        // Expanded touch area with proper hit testing
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            if (Navigator.of(context).canPop()) {
-                              Navigator.of(context).pop();
-                            }
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(12), // Minimum touch target size (48x48 recommended)
-                            child: Icon(Icons.arrow_back, color: Colors.white),
-                          ),
+                        Row(
+                          children: [
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                debugPrint("Back tapped");
+                                Navigator.of(context).pop();
+                              },
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                alignment: Alignment.center,
+                                child:
+                                    Icon(Icons.arrow_back, color: Colors.white),
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 20),
+                                child: Row(
+                                  children: [
+                                    _buildProgressStep("Cart",
+                                        isActive: true,
+                                        isCompleted: true,
+                                        step: 1),
+                                    _buildProgressLine(isActive: false),
+                                    _buildProgressStep("Delivery",
+                                        isActive: false,
+                                        isCompleted: false,
+                                        step: 2),
+                                    _buildProgressLine(isActive: false),
+                                    _buildProgressStep("Payment",
+                                        isActive: false,
+                                        isCompleted: false,
+                                        step: 3),
+                                    _buildProgressLine(isActive: false),
+                                    _buildProgressStep("Confirmation",
+                                        isActive: false,
+                                        isCompleted: false,
+                                        step: 4),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 48),
+                          ],
                         ),
-                        const Spacer(),
-                        SizedBox(width: 48),
                       ],
                     ),
                   ),
@@ -144,20 +180,14 @@ class _CartState extends State<Cart> {
                     child: cart.cartItems.isEmpty
                         ? _buildEmptyCart()
                         : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 100),
-                      itemCount: cart.cartItems.length,
-                      itemBuilder: (context, index) => _buildCartItem(cart, index),
-                    ),
+                            padding: const EdgeInsets.only(bottom: 100),
+                            itemCount: cart.cartItems.length,
+                            itemBuilder: (context, index) =>
+                                _buildCartItem(cart, index),
+                          ),
                   ),
                   _buildStickyCheckoutBar(cart),
                 ],
-              ),
-
-              Positioned(
-                top: topPadding,
-                left: 0,
-                right: 0,
-                child: _buildProgressIndicator(),
               ),
             ],
           ),
@@ -167,51 +197,92 @@ class _CartState extends State<Cart> {
     );
   }
 
-
-
-
   Widget _buildProgressIndicator() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildProgressStep("Delivery", isActive: false),
-          _buildArrow(),
-          _buildProgressStep("Payment", isActive: false),
-          _buildArrow(),
-          _buildProgressStep("Confirmation", isActive: false),
+          _buildProgressStep("Cart",
+              isActive: true, isCompleted: true, step: 1),
+          _buildProgressLine(isActive: false),
+          _buildProgressStep("Delivery",
+              isActive: false, isCompleted: false, step: 2),
+          _buildProgressLine(isActive: false),
+          _buildProgressStep("Payment",
+              isActive: false, isCompleted: false, step: 3),
+          _buildProgressLine(isActive: false),
+          _buildProgressStep("Confirmation",
+              isActive: false, isCompleted: false, step: 4),
         ],
       ),
     );
   }
 
-  Widget _buildArrow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Icon(
-        Icons.arrow_forward,
-        color: Colors.grey[400],
-        size: 20,
+  Widget _buildProgressLine({required bool isActive}) {
+    return Expanded(
+      child: Container(
+        height: 1,
+        color: isActive ? Colors.white : Colors.white.withOpacity(0.3),
       ),
     );
   }
 
-  Widget _buildProgressStep(String text, {bool isActive = false}) {
+  Widget _buildProgressStep(String text,
+      {required bool isActive, required bool isCompleted, required int step}) {
+    final color = isCompleted
+        ? Colors.white
+        : isActive
+            ? Colors.white
+            : Colors.white.withOpacity(0.6);
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          text,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.grey,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: isCompleted || isActive
+                ? Colors.white.withOpacity(0.2)
+                : Colors.transparent,
+            border: Border.all(
+              color: color,
+              width: 2,
+            ),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: isCompleted
+                ? Icon(Icons.check, size: 14, color: Colors.white)
+                : Text(
+                    step.toString(),
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 4),
-        Container(
-          height: 2,
-          width: 50,
-          color: isActive ? Colors.white : Colors.grey[300],
+        Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight:
+                isActive || isCompleted ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ],
     );
@@ -222,7 +293,8 @@ class _CartState extends State<Cart> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.shopping_cart_outlined, size: 60, color: Colors.grey),
+          const Icon(Icons.shopping_cart_outlined,
+              size: 60, color: Colors.grey),
           const SizedBox(height: 16),
           const Text(
             'Your cart is empty',
@@ -246,7 +318,10 @@ class _CartState extends State<Cart> {
                 ),
               );
             },
-            child: const Text('Continue Shopping',     style: TextStyle(color: Colors.white),),
+            child: const Text(
+              'Continue Shopping',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -295,7 +370,6 @@ class _CartState extends State<Cart> {
                   Text(
                     'GH${item.price.toStringAsFixed(2)}',
                     style: TextStyle(color: Colors.green[700]),
-
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -314,20 +388,21 @@ class _CartState extends State<Cart> {
                                 if (item.quantity > 1) {
                                   cart.updateQuantity(index, item.quantity - 1);
                                 }
-                                // Do nothing if quantity is already 1
                               },
                             ),
                             Text(item.quantity.toString()),
                             IconButton(
                               icon: const Icon(Icons.add, size: 18),
-                              onPressed: () => cart.updateQuantity(index, item.quantity + 1),
+                              onPressed: () =>
+                                  cart.updateQuantity(index, item.quantity + 1),
                             ),
                           ],
                         ),
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        icon:
+                            const Icon(Icons.delete_outline, color: Colors.red),
                         onPressed: () => cart.removeFromCart(index),
                       ),
                     ],
@@ -392,7 +467,6 @@ class _CartState extends State<Cart> {
           ),
           const SizedBox(height: 8),
 
-          // Order Summary - Only show if cart has items
           if (!isCartEmpty) _buildOrderSummary(cart),
           if (!isCartEmpty) const SizedBox(height: 8),
 
@@ -406,19 +480,20 @@ class _CartState extends State<Cart> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
                 ),
-                // Disable the button if cart is empty by changing the opacity
                 disabledBackgroundColor: Colors.green.withOpacity(0.5),
                 disabledForegroundColor: Colors.white.withOpacity(0.7),
               ),
               onPressed: isCartEmpty
-                  ? null // Set to null to disable the button when cart is empty
+                  ? null
                   : () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const DeliveryPage()),
-                );
-              },
-              child: const Text('PROCEED TO CHECKOUT', style: TextStyle(color: Colors.white)),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const DeliveryPage()),
+                      );
+                    },
+              child: const Text('PROCEED TO CHECKOUT',
+                  style: TextStyle(color: Colors.white)),
             ),
           ),
         ],
@@ -433,7 +508,8 @@ class _CartState extends State<Cart> {
     return Column(
       children: [
         _buildSummaryRow('Subtotal', subtotal),
-        _buildSummaryRow('Delivery Fee',
+        _buildSummaryRow(
+          'Delivery Fee',
           deliveryOption == 'Delivery' ? deliveryFee : 0,
           isHighlighted: false,
         ),
@@ -443,7 +519,8 @@ class _CartState extends State<Cart> {
     );
   }
 
-  Widget _buildSummaryRow(String label, double value, {bool isHighlighted = false}) {
+  Widget _buildSummaryRow(String label, double value,
+      {bool isHighlighted = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(

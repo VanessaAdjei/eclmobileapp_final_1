@@ -1,3 +1,4 @@
+// pages/delivery_page.dart
 import 'dart:convert';
 import 'package:eclapp/pages/payment_page.dart';
 import 'package:eclapp/pages/savedaddresses.dart';
@@ -35,8 +36,13 @@ class _DeliveryPageState extends State<DeliveryPage> {
   String? selectedRegion;
   String? selectedCity;
   List<String> availableStations = [];
-  final String _selectedCountryCode = 'GH';
-  final String _countryDialCode = '+233';
+  bool _highlightPhoneField = false;
+  bool _highlightAddressField = false;
+  bool _highlightPickupField = false;
+  final GlobalKey addressSectionKey = GlobalKey();
+  final GlobalKey pickupSectionKey = GlobalKey();
+  final GlobalKey phoneSectionKey = GlobalKey();
+  final FocusNode _phoneFocusNode = FocusNode();
 
   @override
   void dispose() {
@@ -46,7 +52,6 @@ class _DeliveryPageState extends State<DeliveryPage> {
     _notesController.dispose();
     super.dispose();
   }
-
 
   @override
   void initState() {
@@ -64,7 +69,13 @@ class _DeliveryPageState extends State<DeliveryPage> {
     }
   }
 
-
+  void _resetHighlights() {
+    setState(() {
+      _highlightPhoneField = false;
+      _highlightAddressField = false;
+      _highlightPickupField = false;
+    });
+  }
 
   Future<void> _searchAddress(String address) async {
     if (!mounted) return;
@@ -84,7 +95,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
               markerId: const MarkerId('deliveryLocation'),
               position: latLng,
               infoWindow: InfoWindow(title: address),
-              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                  BitmapDescriptor.hueGreen),
             )
           };
           deliveryFee = _calculateDeliveryFee(latLng);
@@ -138,7 +150,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
       if (permission == LocationPermission.deniedForever) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permissions are permanently denied')),
+          const SnackBar(
+              content: Text('Location permissions are permanently denied')),
         );
         await openAppSettings();
         return;
@@ -168,11 +181,9 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
       if (placemarks.isNotEmpty && mounted) {
         final place = placemarks.first;
-        final address = [
-          place.street,
-          place.locality,
-          place.administrativeArea
-        ].where((s) => s?.isNotEmpty ?? false).join(', ');
+        final address = [place.street, place.locality, place.administrativeArea]
+            .where((s) => s?.isNotEmpty ?? false)
+            .join(', ');
 
         _typeAheadController.text = address;
         await _searchAddress(address);
@@ -192,25 +203,65 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Get the top padding (safe area)
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       body: Stack(
         children: [
-          // Main content body
           Column(
             children: [
-              PreferredSize(
-                preferredSize: Size.fromHeight(kToolbarHeight),
-                child: AppBar(
-                  backgroundColor: Colors.green.shade700,
-                  elevation: 0,
-                  centerTitle: true,
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+              // Custom header (copied from cart.dart)
+              Container(
+                padding: EdgeInsets.only(top: topPadding),
+                color: Colors.green.shade700,
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            alignment: Alignment.center,
+                            child: Icon(Icons.arrow_back, color: Colors.white),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              children: [
+                                _buildProgressStep("Cart",
+                                    isActive: false,
+                                    isCompleted: true,
+                                    step: 1),
+                                _buildProgressLine(isActive: false),
+                                _buildProgressStep("Delivery",
+                                    isActive: true,
+                                    isCompleted: false,
+                                    step: 2),
+                                _buildProgressLine(isActive: false),
+                                _buildProgressStep("Payment",
+                                    isActive: false,
+                                    isCompleted: false,
+                                    step: 3),
+                                _buildProgressLine(isActive: false),
+                                _buildProgressStep("Confirmation",
+                                    isActive: false,
+                                    isCompleted: false,
+                                    step: 4),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 48),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               Expanded(
@@ -224,8 +275,10 @@ class _DeliveryPageState extends State<DeliveryPage> {
                             children: [
                               _buildDeliveryOptions(),
                               const SizedBox(height: 16),
-                              if (deliveryOption == 'Delivery') _buildMapSection(),
-                              if (deliveryOption == 'Pickup') _buildPickupForm(),
+                              if (deliveryOption == 'Delivery')
+                                _buildMapSection(),
+                              if (deliveryOption == 'Pickup')
+                                _buildPickupForm(),
                               _buildContactInfo(),
                               const SizedBox(height: 16),
                               _buildDeliveryNotes(),
@@ -246,118 +299,78 @@ class _DeliveryPageState extends State<DeliveryPage> {
               ),
             ],
           ),
-
-          // Positioned Progress Indicator on top
-          Positioned(
-            top: topPadding , // Top padding + AppBar height
-            left: 0,
-            right: 0,
-            child: _buildProgressIndicator(),
-          ),
         ],
       ),
       bottomNavigationBar: const CustomBottomNav(),
     );
   }
 
-
-
-
-
-
-  Widget _buildProgressIndicator() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildProgressStep("Delivery", isActive: true),
-          _buildArrow(),
-          _buildProgressStep("Payment", isActive: false, onTap: () {
-
-            if (deliveryOption == 'Delivery' && selectedAddress == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please select a delivery address first')),
-              );
-              return;
-            }
-
-            if (deliveryOption == 'Pickup' && selectedAddress == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please select a pickup location first')),
-              );
-              return;
-            }
-
-            if (_phoneController.text.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please enter your phone number first')),
-              );
-              return;
-            }
-
-            // If all validations pass, navigate to payment page
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PaymentPage(),
-              ),
-            );
-          }),
-          _buildArrow(),
-          _buildProgressStep("Confirmation", isActive: false, onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Complete the current step first')),
-            );
-          }),
-        ],
+  Widget _buildProgressLine({required bool isActive}) {
+    return Expanded(
+      child: Container(
+        height: 1,
+        color: isActive ? Colors.white : Colors.white.withOpacity(0.3),
       ),
     );
   }
 
+  Widget _buildProgressStep(String text,
+      {required bool isActive, required bool isCompleted, required int step}) {
+    final color = isCompleted
+        ? Colors.white
+        : isActive
+            ? Colors.white
+            : Colors.white.withOpacity(0.6);
 
-  Widget _buildArrow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Icon(
-        Icons.label_outline,
-        color: Colors.grey[400],
-        size: 20,
-      ),
-    );
-  }
-
-
-  Widget _buildProgressStep(String text, {bool isActive = false, VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Text(
-            text,
-            style: TextStyle(
-              color: isActive ? Colors.white : Colors.grey,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: isCompleted || isActive
+                ? Colors.white.withOpacity(0.2)
+                : Colors.transparent,
+            border: Border.all(
+              color: color,
+              width: 2,
             ),
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 4),
-          Container(
-            height: 2,
-            width: 50,
-            color: isActive ? Colors.white : Colors.grey,
+          child: Center(
+            child: isCompleted
+                ? Icon(Icons.check, size: 14, color: Colors.white)
+                : Text(
+                    step.toString(),
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight:
+                isActive || isCompleted ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
     );
   }
-
 
   Widget _buildDeliveryOptions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.all(16),
           child: Text(
             'DELIVERY METHOD',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -372,10 +385,13 @@ class _DeliveryPageState extends State<DeliveryPage> {
                 child: ChoiceChip(
                   label: const Text('Home Delivery'),
                   selected: deliveryOption == 'Delivery',
-                  onSelected: (selected) => _handleDeliveryOptionChange('Delivery'),
+                  onSelected: (selected) =>
+                      _handleDeliveryOptionChange('Delivery'),
                   selectedColor: Colors.green.withOpacity(0.2),
                   labelStyle: TextStyle(
-                    color: deliveryOption == 'Delivery' ? Colors.green : Colors.black,
+                    color: deliveryOption == 'Delivery'
+                        ? Colors.green
+                        : Colors.black,
                   ),
                 ),
               ),
@@ -384,10 +400,13 @@ class _DeliveryPageState extends State<DeliveryPage> {
                 child: ChoiceChip(
                   label: const Text('Pickup Station'),
                   selected: deliveryOption == 'Pickup',
-                  onSelected: (selected) => _handleDeliveryOptionChange('Pickup'),
+                  onSelected: (selected) =>
+                      _handleDeliveryOptionChange('Pickup'),
                   selectedColor: Colors.green.withOpacity(0.2),
                   labelStyle: TextStyle(
-                    color: deliveryOption == 'Pickup' ? Colors.green : Colors.black,
+                    color: deliveryOption == 'Pickup'
+                        ? Colors.green
+                        : Colors.black,
                   ),
                 ),
               ),
@@ -409,6 +428,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
   Widget _buildMapSection() {
     return Column(
+      key: addressSectionKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
@@ -429,21 +449,36 @@ class _DeliveryPageState extends State<DeliveryPage> {
               border: const OutlineInputBorder(),
               suffixIcon: _typeAheadController.text.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  _typeAheadController.clear();
-                  setState(() {
-                    selectedLocation = null;
-                    selectedAddress = null;
-                    markers.clear();
-                  });
-                },
-              )
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _typeAheadController.clear();
+                        setState(() {
+                          selectedLocation = null;
+                          selectedAddress = null;
+                          markers.clear();
+                        });
+                      },
+                    )
+                  : null,
+              focusedBorder: _highlightAddressField
+                  ? OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                      borderRadius: BorderRadius.circular(4),
+                    )
+                  : null,
+              enabledBorder: _highlightAddressField
+                  ? OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                      borderRadius: BorderRadius.circular(4),
+                    )
                   : null,
             ),
             onSubmitted: (value) async {
               if (value.length > 2) {
                 await _searchAddress(value);
+                setState(() {
+                  _highlightAddressField = false;
+                });
               }
             },
           ),
@@ -475,7 +510,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
                         markerId: const MarkerId('deliveryLocation'),
                         position: selected.location,
                         infoWindow: InfoWindow(title: selected.address),
-                        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                        icon: BitmapDescriptor.defaultMarkerWithHue(
+                            BitmapDescriptor.hueGreen),
                       )
                     };
                     deliveryFee = _calculateDeliveryFee(selected.location);
@@ -490,7 +526,6 @@ class _DeliveryPageState extends State<DeliveryPage> {
               },
             ),
           ),
-
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           child: SizedBox(
@@ -500,7 +535,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
                 GoogleMap(
                   initialCameraPosition: CameraPosition(
                     target: currentPosition != null
-                        ? LatLng(currentPosition!.latitude, currentPosition!.longitude)
+                        ? LatLng(currentPosition!.latitude,
+                            currentPosition!.longitude)
                         : const LatLng(5.6037, -0.1870),
                     zoom: 12,
                   ),
@@ -522,11 +558,11 @@ class _DeliveryPageState extends State<DeliveryPage> {
                   markers: markers,
                   myLocationEnabled: true,
                   myLocationButtonEnabled: false,
-                  zoomControlsEnabled: true, // Changed to true
-                  zoomGesturesEnabled: true, // Added this
-                  scrollGesturesEnabled: true, // Added this
-                  tiltGesturesEnabled: true, // Added this
-                  rotateGesturesEnabled: true, // Added this
+                  zoomControlsEnabled: true,
+                  zoomGesturesEnabled: true,
+                  scrollGesturesEnabled: true,
+                  tiltGesturesEnabled: true,
+                  rotateGesturesEnabled: true,
                   onTap: (latLng) async {
                     try {
                       final placemarks = await placemarkFromCoordinates(
@@ -593,7 +629,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Delivery Fee: GH${deliveryFee.toStringAsFixed(2)}',
+                  'Delivery Fee: GHS ${deliveryFee.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -608,7 +644,6 @@ class _DeliveryPageState extends State<DeliveryPage> {
   }
 
   Widget _buildPickupForm() {
-
     final Map<String, Map<String, List<String>>> pickupLocations = {
       'Greater Accra': {
         'Accra': ['Accra Mall', 'West Hills Mall', 'Achimota Retail Centre'],
@@ -627,6 +662,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
     };
 
     return Padding(
+      key: pickupSectionKey,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,15 +672,27 @@ class _DeliveryPageState extends State<DeliveryPage> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 12),
-
-          // Region Dropdown
           DropdownButtonFormField<String>(
             value: selectedRegion,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Select Region',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
               filled: true,
               fillColor: Colors.white,
+              focusedBorder: _highlightPickupField
+                  ? OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                      borderRadius: BorderRadius.circular(4),
+                    )
+                  : null,
+              enabledBorder: _highlightPickupField
+                  ? OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                      borderRadius: BorderRadius.circular(4),
+                    )
+                  : null,
+              labelStyle:
+                  _highlightPickupField ? TextStyle(color: Colors.red) : null,
             ),
             items: pickupLocations.keys.map((region) {
               return DropdownMenuItem(
@@ -660,10 +708,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
               });
             },
           ),
-
           if (selectedRegion != null) ...[
             const SizedBox(height: 12),
-            // City Dropdown
             DropdownButtonFormField<String>(
               value: selectedCity,
               decoration: const InputDecoration(
@@ -686,10 +732,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
               },
             ),
           ],
-
           if (selectedCity != null) ...[
             const SizedBox(height: 12),
-            // Station Dropdown
             DropdownButtonFormField<String>(
               value: selectedAddress,
               decoration: const InputDecoration(
@@ -698,7 +742,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
                 filled: true,
                 fillColor: Colors.white,
               ),
-              items: pickupLocations[selectedRegion]![selectedCity]!.map((station) {
+              items: pickupLocations[selectedRegion]![selectedCity]!
+                  .map((station) {
                 return DropdownMenuItem(
                   value: station,
                   child: Text(station),
@@ -712,7 +757,6 @@ class _DeliveryPageState extends State<DeliveryPage> {
               },
             ),
           ],
-
           const SizedBox(height: 12),
           const Text(
             'Pickup stations are open Monday-Saturday, 9am-6pm',
@@ -722,8 +766,13 @@ class _DeliveryPageState extends State<DeliveryPage> {
       ),
     );
   }
+
   Widget _buildContactInfo() {
+    bool isPhoneValid =
+        _phoneController.text.length == 10 || _phoneController.text.isEmpty;
+
     return Padding(
+      key: phoneSectionKey,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -733,28 +782,53 @@ class _DeliveryPageState extends State<DeliveryPage> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 12),
-
-
-
           TextField(
             controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            onChanged: (value) {
+              setState(() {
+                _highlightPhoneField = false;
+              });
+            },
             decoration: InputDecoration(
               labelText: 'Phone Number',
               border: const OutlineInputBorder(),
-              prefixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text('🇬🇭', style: TextStyle(fontSize: 24)),
-                  ),
-                  Text('+233 ', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 8),
-                ],
+              errorText: isPhoneValid ? null : 'Phone number must be 10 digits',
+              prefixIcon: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Text('🇬🇭', style: TextStyle(fontSize: 24)),
+                    SizedBox(width: 4),
+                    Text('+233', style: TextStyle(fontSize: 16)),
+                  ],
+                ),
               ),
+              focusedBorder: _highlightPhoneField
+                  ? OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                      borderRadius: BorderRadius.circular(4),
+                    )
+                  : null,
+              enabledBorder: _highlightPhoneField
+                  ? OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                      borderRadius: BorderRadius.circular(4),
+                    )
+                  : null,
+              labelStyle:
+                  _highlightPhoneField ? TextStyle(color: Colors.red) : null,
             ),
-            keyboardType: TextInputType.phone,
-          )
+          ),
+          // if (!isPhoneValid && _phoneController.text.isNotEmpty)
+          //   const Padding(
+          //     padding: EdgeInsets.only(top: 4.0),
+          //     child: Text(
+          //       '34',
+          //       style: TextStyle(color: Colors.red, fontSize: 12),
+          //     ),
+          //   ),
         ],
       ),
     );
@@ -812,7 +886,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
     );
   }
 
-  Widget _buildSummaryRow(String label, double value, {bool isHighlighted = false}) {
+  Widget _buildSummaryRow(String label, double value,
+      {bool isHighlighted = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -846,28 +921,76 @@ class _DeliveryPageState extends State<DeliveryPage> {
             backgroundColor: Colors.green,
             padding: const EdgeInsets.symmetric(vertical: 10),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4), // Change this to 0 for square corners
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
           onPressed: () async {
             await saveCurrentAddress();
+
+            bool isValid = true;
+
+            // Validate delivery/pickup address
             if (deliveryOption == 'Delivery' && selectedAddress == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please select a delivery address')),
-              );
-              return;
+              setState(() {
+                _highlightAddressField = true;
+                isValid = false;
+              });
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Scrollable.ensureVisible(
+                  addressSectionKey.currentContext!,
+                  alignment: 0.5,
+                  duration: Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                );
+              });
+            } else if (deliveryOption == 'Pickup' && selectedAddress == null) {
+              setState(() {
+                _highlightPickupField = true;
+                isValid = false;
+              });
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Scrollable.ensureVisible(
+                  pickupSectionKey.currentContext!,
+                  alignment: 0.5,
+                  duration: Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                );
+              });
             }
 
-            if (deliveryOption == 'Pickup' && selectedAddress == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please select a pickup location')),
-              );
-              return;
-            }
-
+            // Validate phone number
             if (_phoneController.text.isEmpty) {
+              setState(() {
+                _highlightPhoneField = true;
+                isValid = false;
+              });
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Scrollable.ensureVisible(
+                  phoneSectionKey.currentContext!,
+                  alignment: 0.5,
+                  duration: Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                );
+              });
+            } else if (_phoneController.text.length != 10) {
+              setState(() {
+                _highlightPhoneField = true;
+                isValid = false;
+              });
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Scrollable.ensureVisible(
+                  phoneSectionKey.currentContext!,
+                  alignment: 0.5,
+                  duration: Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                );
+              });
+            }
+
+            if (!isValid) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please enter your phone number')),
+                const SnackBar(
+                    content: Text('Please fill all required fields')),
               );
               return;
             }
@@ -879,14 +1002,17 @@ class _DeliveryPageState extends State<DeliveryPage> {
               ),
             );
           },
-          child: const Text('CONTINUE TO PAYMENT',     style: TextStyle(color: Colors.white),),
+          child: const Text(
+            'CONTINUE TO PAYMENT',
+            style: TextStyle(color: Colors.white),
+          ),
         ),
       ),
     );
   }
 
-
   void _handleDeliveryOptionChange(String option) {
+    _resetHighlights();
     setState(() {
       deliveryOption = option;
       if (option == 'Pickup') {
@@ -916,13 +1042,10 @@ class _DeliveryPageState extends State<DeliveryPage> {
       address: selectedAddress!,
       location: selectedLocation!,
     );
-
-    // Check if address already exists
     bool addressExists = savedAddresses.any((addr) =>
-    addr.address == newAddress.address ||
+        addr.address == newAddress.address ||
         (addr.location.latitude == newAddress.location.latitude &&
-            addr.location.longitude == newAddress.location.longitude)
-    );
+            addr.location.longitude == newAddress.location.longitude));
 
     if (!addressExists) {
       setState(() {
@@ -930,9 +1053,9 @@ class _DeliveryPageState extends State<DeliveryPage> {
       });
 
       final prefs = await SharedPreferences.getInstance();
-      final savedData = savedAddresses.map((e) => json.encode(e.toJson())).toList();
+      final savedData =
+          savedAddresses.map((e) => json.encode(e.toJson())).toList();
       await prefs.setStringList('saved_addresses', savedData);
     }
   }
-
 }
