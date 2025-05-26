@@ -1,5 +1,7 @@
+// pages/webview.dart
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'homepage.dart';
 
 class ExpressPayWebView extends StatefulWidget {
   final String checkoutUrl;
@@ -45,7 +47,8 @@ class _ExpressPayWebViewState extends State<ExpressPayWebView> {
             if (request.url.contains('expresspaygh.com/payment/success')) {
               widget.onPaymentComplete('Payment successful');
               return NavigationDecision.prevent;
-            } else if (request.url.contains('expresspaygh.com/payment/failed')) {
+            } else if (request.url
+                .contains('expresspaygh.com/payment/failed')) {
               widget.onError('Payment failed');
               return NavigationDecision.prevent;
             }
@@ -63,7 +66,16 @@ class _ExpressPayWebViewState extends State<ExpressPayWebView> {
         title: const Text('ExpressPay Checkout'),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          },
         ),
       ),
       body: Stack(

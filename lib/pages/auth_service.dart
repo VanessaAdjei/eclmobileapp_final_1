@@ -1,3 +1,4 @@
+// pages/auth_service.dart
 import 'dart:async';
 import 'package:eclapp/pages/signinpage.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'ProductModel.dart';
-
 
 class AuthService {
   static const String baseUrl = "https://eclcommerce.ernestchemists.com.gh/api";
@@ -21,7 +21,8 @@ class AuthService {
 
   List<Product> products = [];
   List<Product> filteredProducts = [];
-  static final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  static final FlutterSecureStorage secureStorage =
+      const FlutterSecureStorage();
   static bool _isLoggedIn = false;
   static String? _authToken;
   static Timer? _tokenRefreshTimer;
@@ -42,11 +43,11 @@ class AuthService {
     return sha256.convert(utf8.encode(password)).toString();
   }
 
-
   Future<List<Product>> fetchProducts() async {
     try {
       final response = await http.get(
-        Uri.parse('https://eclcommerce.ernestchemists.com.gh/api/get-all-products'),
+        Uri.parse(
+            'https://eclcommerce.ernestchemists.com.gh/api/get-all-products'),
       );
 
       if (response.statusCode == 200) {
@@ -61,6 +62,7 @@ class AuthService {
             description: productData['description'] ?? '',
             urlName: productData['url_name'] ?? '',
             status: productData['status'] ?? '',
+            batch_no: productData['batch_no'] ?? '',
             price: (item['price'] ?? 0).toString(),
             thumbnail: productData['thumbnail'] ?? '',
             quantity: productData['quantity'] ?? '',
@@ -79,11 +81,11 @@ class AuthService {
     }
   }
 
-
   static Future<Product> fetchProductDetails(String urlName) async {
     try {
       final response = await http.get(
-        Uri.parse('https://eclcommerce.ernestchemists.com.gh/api/product-details/$urlName'),
+        Uri.parse(
+            'https://eclcommerce.ernestchemists.com.gh/api/product-details/$urlName'),
       );
 
       if (response.statusCode == 200) {
@@ -98,9 +100,10 @@ class AuthService {
           status: productData['status'] ?? '',
           category: productData['category'] ?? '',
           route: productData['route'] ?? '',
-          price: (productData['price'] ?? 0).toDouble(),
+          batch_no: productData['batch_no'] ?? '',
+          price: (productData['price'] ?? 0).toString(),
           thumbnail: productData['thumbnail'] ?? '',
-          quantity: productData['qty_in_stock'] ?? 0,
+          quantity: productData['qty_in_stock']?.toString() ?? '',
         );
       } else {
         throw Exception('Failed to load product details');
@@ -112,7 +115,8 @@ class AuthService {
   }
 
   // Sign up  user
-  static Future<bool> signUp(String name, String email, String password, String phoneNumber) async {
+  static Future<bool> signUp(
+      String name, String email, String password, String phoneNumber) async {
     final url = Uri.parse('$baseUrl/register');
 
     try {
@@ -139,12 +143,10 @@ class AuthService {
     }
   }
 
-
   // OTP
   static Future<bool> verifyOTP(String email, String otp) async {
-    final url = Uri.parse('https://eclcommerce.ernestchemists.com.gh/api/otp-verification');
-
-
+    final url = Uri.parse(
+        'https://eclcommerce.ernestchemists.com.gh/api/otp-verification');
 
     try {
       final response = await http.post(
@@ -183,12 +185,10 @@ class AuthService {
     print("Token saved: $token");
   }
 
-
-
   // Sign in a  user
-  static Future<Map<String, dynamic>> signIn(String email, String password) async {
+  static Future<Map<String, dynamic>> signIn(
+      String email, String password) async {
     try {
-
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
@@ -232,7 +232,6 @@ class AuthService {
     debugPrint('Token exists: ${_authToken != null}');
     if (_isLoggedIn && _authToken != null) return true;
 
-
     final token = await secureStorage.read(key: authTokenKey);
     debugPrint('Storage token: ${token != null ? "exists" : "null"}');
     if (token == null) {
@@ -251,7 +250,6 @@ class AuthService {
     _isLoggedIn = true;
     return true;
   }
-
 
   static Future<bool> _verifyToken() async {
     try {
@@ -289,7 +287,6 @@ class AuthService {
     }
   }
 
-
   static void _startTokenRefreshTimer() {
     _tokenRefreshTimer?.cancel();
     _tokenRefreshTimer = Timer.periodic(Duration(minutes: 5), (_) async {
@@ -298,7 +295,6 @@ class AuthService {
       }
     });
   }
-
 
   static Future<Map<String, String>> getAuthHeaders() async {
     final token = await getBearerToken();
@@ -309,15 +305,13 @@ class AuthService {
     };
   }
 
-
   Future<void> saveUserDetails(String name, String email, String phone) async {
     await secureStorage.write(key: userNameKey, value: name);
     await secureStorage.write(key: userEmailKey, value: email);
     await secureStorage.write(key: userPhoneNumberKey, value: phone);
   }
 
-
-   Future<String?> getUserName() async {
+  Future<String?> getUserName() async {
     try {
       String? userName = await secureStorage.read(key: userNameKey);
       print("Retrieved User Name: $userName");
@@ -329,7 +323,7 @@ class AuthService {
     }
   }
 
-   Future<void> saveProfileImage(String imagePath) async {
+  Future<void> saveProfileImage(String imagePath) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('profile_image', imagePath);
   }
@@ -339,22 +333,20 @@ class AuthService {
     return prefs.getString('profile_image');
   }
 
-
-
   static Future<void> storeUserData(Map<String, dynamic> user) async {
     try {
       await secureStorage.write(key: 'user_id', value: user['id'].toString());
       await secureStorage.write(key: userNameKey, value: user['name']);
       await secureStorage.write(key: userEmailKey, value: user['email']);
       if (user['phone'] != null) {
-        await secureStorage.write(key: userPhoneNumberKey, value: user['phone']);
+        await secureStorage.write(
+            key: userPhoneNumberKey, value: user['phone']);
       }
       debugPrint("User data saved successfully");
     } catch (e) {
       debugPrint("Error saving user data: $e");
     }
   }
-
 
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
@@ -377,7 +369,6 @@ class AuthService {
     }
   }
 
-
   static Future<String?> getCurrentUserID() async {
     try {
       final id = await secureStorage.read(key: 'user_id');
@@ -393,19 +384,16 @@ class AuthService {
     }
   }
 
-
   //
   // static Future<void> saveToken(String token) async {
   //   await secureStorage.write(key: authTokenKey, value: token);
   //   print("Token saved: $token");
   // }
 
-
   static bool isValidJwt(String token) {
     final parts = token.split('.');
     return parts.length == 3;
   }
-
 
   static Future<bool> isUserSignedUp(String email) async {
     try {
@@ -414,7 +402,7 @@ class AuthService {
 
       Map<String, dynamic> rawUsers = json.decode(usersData);
       Map<String, Map<String, String>> users = rawUsers.map(
-            (key, value) => MapEntry(key, Map<String, String>.from(value)),
+        (key, value) => MapEntry(key, Map<String, String>.from(value)),
       );
 
       return users.containsKey(email);
@@ -442,7 +430,6 @@ class AuthService {
     }
   }
 
-
   static Future<void> debugPrintUserData() async {
     try {
       String? usersData = await secureStorage.read(key: usersKey);
@@ -451,9 +438,6 @@ class AuthService {
       print("Error retrieving user data for debugging: $e");
     }
   }
-
-
-
 
   static Future<bool> validateCurrentPassword(String password) async {
     try {
@@ -482,8 +466,8 @@ class AuthService {
     }
   }
 
-
-  static Future<bool> updatePassword(String oldPassword, String newPassword) async {
+  static Future<bool> updatePassword(
+      String oldPassword, String newPassword) async {
     try {
       if (!(await validateCurrentPassword(oldPassword))) {
         print("Old password does not match.");
@@ -516,8 +500,8 @@ class AuthService {
     print("Username saved: $username");
   }
 
-
-  static Future<void> checkAuthAndRedirect(BuildContext context, {VoidCallback? onSuccess}) async {
+  static Future<void> checkAuthAndRedirect(BuildContext context,
+      {VoidCallback? onSuccess}) async {
     final isLoggedIn = await AuthService.isLoggedIn();
 
     if (!isLoggedIn) {
@@ -538,8 +522,6 @@ class AuthService {
       onSuccess();
     }
   }
-
-
 
   static Future<bool> checkAuthStatus() async {
     try {
@@ -580,38 +562,37 @@ class AuthService {
     return result ?? false;
   }
 
-
   static Future<Map<String, dynamic>> checkAuthWithCart() async {
     try {
-      final token = await secureStorage.read(key: authTokenKey);
+      final token = await getToken();
+      print('Token used for check-auth: $token');
       if (token == null) return {'authenticated': false};
 
-      final response = await http.get(
+      final response = await http.post(
         Uri.parse('$baseUrl/check-auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
         },
+        body: jsonEncode({}),
       );
+      print('Raw check-auth HTTP response: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return {
           'authenticated': true,
-          'cartItems': data['items'] ?? [],
+          'items': data['items'] ?? [],
           'totalPrice': data['totalPrice'] ?? 0,
         };
       }
-      return {'authenticated': false};
+      return {};
     } catch (e) {
       debugPrint('Auth check error: $e');
       return {'authenticated': false};
     }
-
-
   }
-
-
 
   static Future<void> protectedCartAction({
     required BuildContext context,
@@ -709,11 +690,8 @@ class AuthService {
     await prefs.setString('local_cart', jsonEncode(serverItems));
   }
 
-
-
-
-
-  static Future<Map<String, dynamic>> updateServerCart(List<Map<String, dynamic>> items) async {
+  static Future<Map<String, dynamic>> updateServerCart(
+      List<Map<String, dynamic>> items) async {
     try {
       final token = await getToken();
       if (token == null) {
@@ -748,12 +726,13 @@ class AuthService {
     }
   }
 
-
-
-  static Future<Map<String, dynamic>> mergeServerCart(List<Map<String, dynamic>> items) async {
+  static Future<Map<String, dynamic>> mergeServerCart(
+      List<Map<String, dynamic>> items) async {
     try {
       final token = await getBearerToken();
-      if (token == null) return {'success': false, 'message': 'Not authenticated'};
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
 
       final response = await http.post(
         Uri.parse('$baseUrl/cart/merge'),
@@ -776,6 +755,26 @@ class AuthService {
     }
   }
 
+  static Future<Map<String, dynamic>> addToCartCheckAuth({
+    required int productID,
+    required int quantity,
+    required String batchNo,
+  }) async {
+    final token = await secureStorage.read(key: authTokenKey);
+    final response = await http.post(
+      Uri.parse('$baseUrl/check-auth'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'productID': productID,
+        'quantity': quantity,
+        'batch_no': batchNo,
+      }),
+    );
+    return jsonDecode(response.body);
+  }
 }
 
 class AuthWrapper extends StatelessWidget {
@@ -789,7 +788,8 @@ class AuthWrapper extends StatelessWidget {
       future: AuthService.isLoggedIn(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
         }
 
         if (!snapshot.hasData || !snapshot.data!) {
@@ -802,20 +802,7 @@ class AuthWrapper extends StatelessWidget {
       },
     );
   }
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
 
 class AuthState extends InheritedWidget {
   final bool isLoggedIn;

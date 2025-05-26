@@ -5,6 +5,10 @@ import 'package:eclapp/pages/homepage.dart';
 import 'bottomnav.dart';
 import 'cartprovider.dart';
 import 'delivery_page.dart';
+import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:core';
+import 'AppBackButton.dart';
 
 class Cart extends StatefulWidget {
   const Cart({super.key});
@@ -23,9 +27,24 @@ class _CartState extends State<Cart> {
 
   TextEditingController addressController = TextEditingController();
 
+  Timer? _syncTimer;
+
   @override
   void initState() {
     super.initState();
+    // Start periodic sync every minute
+    _syncTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        Provider.of<CartProvider>(context, listen: false).syncWithApi();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    addressController.dispose();
+    super.dispose();
   }
 
   void showTopSnackBar(BuildContext context, String message,
@@ -109,12 +128,27 @@ class _CartState extends State<Cart> {
     'Takoradi Mall'
   ];
 
+  // Improved helper to get the full product image URL for all possible formats
+  String getImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/uploads/')) {
+      return 'https://adm-ecommerce.ernestchemists.com.gh$url';
+    }
+    if (url.startsWith('/storage/')) {
+      return 'https://eclcommerce.ernestchemists.com.gh$url';
+    }
+    // Otherwise, treat as filename
+    return 'https://adm-ecommerce.ernestchemists.com.gh/uploads/product/$url';
+  }
+
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Consumer<CartProvider>(
       builder: (context, cart, child) {
+        print('Cart items in UI: \\${cart.cartItems}');
         return Scaffold(
           body: Stack(
             children: [
@@ -127,19 +161,20 @@ class _CartState extends State<Cart> {
                       children: [
                         Row(
                           children: [
-                            GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
+                            AppBackButton(
+                              backgroundColor: Colors.green.shade700,
+                              onPressed: () {
                                 debugPrint("Back tapped");
-                                Navigator.of(context).pop();
+                                if (Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                } else {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => HomePage()),
+                                  );
+                                }
                               },
-                              child: Container(
-                                width: 48,
-                                height: 48,
-                                alignment: Alignment.center,
-                                child:
-                                    Icon(Icons.arrow_back, color: Colors.white),
-                              ),
                             ),
                             Expanded(
                               child: Container(
@@ -173,6 +208,11 @@ class _CartState extends State<Cart> {
                             const SizedBox(width: 48),
                           ],
                         ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: SizedBox
+                              .shrink(), // Removed Sync Cart from Server button
+                        ),
                       ],
                     ),
                   ),
@@ -194,37 +234,6 @@ class _CartState extends State<Cart> {
           bottomNavigationBar: const CustomBottomNav(),
         );
       },
-    );
-  }
-
-  Widget _buildProgressIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _buildProgressStep("Cart",
-              isActive: true, isCompleted: true, step: 1),
-          _buildProgressLine(isActive: false),
-          _buildProgressStep("Delivery",
-              isActive: false, isCompleted: false, step: 2),
-          _buildProgressLine(isActive: false),
-          _buildProgressStep("Payment",
-              isActive: false, isCompleted: false, step: 3),
-          _buildProgressLine(isActive: false),
-          _buildProgressStep("Confirmation",
-              isActive: false, isCompleted: false, step: 4),
-        ],
-      ),
     );
   }
 
@@ -345,9 +354,7 @@ class _CartState extends State<Cart> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
               image: DecorationImage(
-                image: NetworkImage(item.image.startsWith('http')
-                    ? item.image
-                    : 'https://eclcommerce.ernestchemists.com.gh/storage/${item.image}'),
+                image: NetworkImage(getImageUrl(item.image)),
                 fit: BoxFit.cover,
               ),
             ),

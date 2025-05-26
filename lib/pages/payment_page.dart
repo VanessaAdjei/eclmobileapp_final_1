@@ -10,7 +10,7 @@ import 'auth_service.dart';
 import 'bottomnav.dart';
 import 'cartprovider.dart';
 import 'homepage.dart';
-import 'cart.dart';
+import 'AppBackButton.dart';
 
 class PaymentPage extends StatefulWidget {
   const PaymentPage({super.key});
@@ -355,17 +355,11 @@ class _PaymentPageState extends State<PaymentPage> {
                   children: [
                     Row(
                       children: [
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
+                        AppBackButton(
+                          backgroundColor: Colors.green.shade700,
+                          onPressed: () {
                             Navigator.of(context).pop();
                           },
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            alignment: Alignment.center,
-                            child: Icon(Icons.arrow_back, color: Colors.white),
-                          ),
                         ),
                         Expanded(
                           child: Container(
@@ -410,7 +404,6 @@ class _PaymentPageState extends State<PaymentPage> {
                         children: [
                           _buildPaymentMethods(),
                           const SizedBox(height: 20),
-                          _buildSavePaymentToggle(),
                           if (_paymentError != null) _buildErrorBanner(),
                           const SizedBox(height: 20),
                           _buildOrderSummary(cart),
@@ -581,23 +574,6 @@ class _PaymentPageState extends State<PaymentPage> {
             ),
           );
         }),
-      ],
-    );
-  }
-
-  Widget _buildSavePaymentToggle() {
-    return Row(
-      children: [
-        Checkbox(
-          value: savePaymentMethod,
-          onChanged: (value) {
-            setState(() {
-              savePaymentMethod = value!;
-            });
-          },
-          activeColor: Colors.green,
-        ),
-        const Text('Save this payment method '),
       ],
     );
   }

@@ -1,5 +1,5 @@
+// pages/loggedout.dart
 import 'package:eclapp/pages/homepage.dart';
-import 'package:eclapp/pages/signinpage.dart';
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 

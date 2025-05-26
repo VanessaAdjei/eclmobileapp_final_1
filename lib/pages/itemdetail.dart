@@ -1,5 +1,4 @@
 // pages/itemdetail.dart
-import 'package:eclapp/pages/signinpage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
@@ -14,6 +13,8 @@ import 'cartprovider.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:eclapp/pages/signinpage.dart';
+import 'AppBackButton.dart';
 
 class ItemPage extends StatefulWidget {
   final String urlName;
@@ -36,32 +37,13 @@ class _ItemPageState extends State<ItemPage> {
     _productFuture = fetchProductDetails(widget.urlName);
   }
 
-  String _cleanHtml(String html) {
-    try {
-      final document = parse(html);
-      return document.body?.text ?? html;
-    } catch (e) {
-      return html.replaceAll(RegExp(r'<[^>]*>'), ' ');
-    }
-  }
-
   Future<void> addToCartWithAuth(BuildContext context, Product product) async {
     if (await AuthService.isLoggedIn()) {
       _addToCart(context, product);
-    } else {
-      final result = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SignInScreen(
-            returnTo: ModalRoute.of(context)?.settings.name,
-            onSuccess: () => _addToCart(context, product),
-          ),
-        ),
-      );
-    }
+    } else {}
   }
 
-  void _addToCart(BuildContext context, Product product) {
+  void _addToCart(BuildContext context, Product product) async {
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     cartProvider.addToCart(
       CartItem(
@@ -73,7 +55,31 @@ class _ItemPageState extends State<ItemPage> {
         quantity: quantity, // Use the selected quantity
       ),
     );
-
+    print('Attempting to add to cart: '
+        'id: ${product.id}, name: ${product.name}, price: ${product.price}, quantity: ${quantity}');
+    final backendResponse = await AuthService.addToCartCheckAuth(
+      productID: product.id,
+      quantity: quantity,
+      batchNo: product.batch_no,
+    );
+    print('Add to cart response: $backendResponse');
+    // Update provider with backend items
+    if (backendResponse['items'] != null) {
+      final items = (backendResponse['items'] as List)
+          .map((item) => CartItem(
+                id: item['product_id']?.toString() ??
+                    item['id']?.toString() ??
+                    '',
+                name: item['product_name'] ?? item['name'] ?? '',
+                price: (item['price'] is int || item['price'] is double)
+                    ? item['price'].toDouble()
+                    : double.tryParse(item['price'].toString()) ?? 0.0,
+                image: item['product_img'] ?? item['thumbnail'] ?? '',
+                quantity: item['qty'] ?? item['quantity'] ?? 1,
+              ))
+          .toList();
+      cartProvider.setCartItems(items);
+    }
     showTopSnackBar(context, '${product.name} added to cart');
   }
 
@@ -139,6 +145,7 @@ class _ItemPageState extends State<ItemPage> {
         description: "Pain relief medicine",
         urlName: "paracetamol-500mg-tablets",
         status: "active",
+        batch_no: "1234567890",
         price: "5.99",
         route: '',
         thumbnail:
@@ -152,6 +159,7 @@ class _ItemPageState extends State<ItemPage> {
         description: "Anti-inflammatory medicine",
         urlName: "ibuprofen-200mg-capsules",
         status: "active",
+        batch_no: "1234567890",
         price: "7.50",
         thumbnail:
             "https://eclcommerce.ernestchemists.com.gh/storage/ibuprofen.jpg",
@@ -163,6 +171,7 @@ class _ItemPageState extends State<ItemPage> {
         id: 3,
         name: "Vitamin C 1000mg Tablets",
         description: "Immune system booster",
+        batch_no: "1234567890",
         urlName: "vitamin-c-1000mg-tablets",
         status: "active",
         price: "12.99",
@@ -226,18 +235,7 @@ class _ItemPageState extends State<ItemPage> {
         backgroundColor: Colors.green.shade700,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          padding: EdgeInsets.zero, // Remove default padding
-          icon: Container(
-            margin: const EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.green[400],
-            ),
-            child: const Icon(Icons.arrow_back, color: Colors.white),
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: AppBackButton(),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 8.0),
@@ -487,7 +485,24 @@ class _ItemPageState extends State<ItemPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                         ),
                         onPressed: () async {
-                          await addToCartWithAuth(context, product);
+                          if (!await AuthService.isLoggedIn()) {
+                            // Redirect to sign in page
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SignInScreen(
+                                  returnTo:
+                                      ModalRoute.of(context)?.settings.name,
+                                ),
+                              ),
+                            );
+                            // Optionally, after sign in, check again and add to cart if logged in
+                            if (await AuthService.isLoggedIn()) {
+                              _addToCart(context, product);
+                            }
+                          } else {
+                            _addToCart(context, product);
+                          }
                         },
                       ),
                     ),
@@ -620,17 +635,8 @@ class ItemPageSkeleton extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.grey[300],
         elevation: 0,
-        leading: Container(
-          margin: const EdgeInsets.all(8.0),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.grey[400],
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () {},
-          ),
-        ),
+        leading:
+            AppBackButton(backgroundColor: Colors.grey[400] ?? Colors.grey),
         title: Container(
           width: 200,
           height: 24,
@@ -866,9 +872,9 @@ class ProductDescription extends StatefulWidget {
   final String description;
 
   const ProductDescription({
-    Key? key,
+    super.key,
     required this.description,
-  }) : super(key: key);
+  });
 
   @override
   State<ProductDescription> createState() => _ProductDescriptionState();
@@ -927,7 +933,7 @@ class _ProductDescriptionState extends State<ProductDescription> {
         } else if (currentTitle.isNotEmpty) {
           // This is content for the current section
           if (currentContent.isNotEmpty) {
-            currentContent += ' ' + text;
+            currentContent += ' $text';
           } else {
             currentContent = text;
           }
@@ -1007,7 +1013,7 @@ class _ProductDescriptionState extends State<ProductDescription> {
     final content = firstSection['content'] ?? '';
     final words = content.split(' ');
     final displayContent =
-        words.length > 20 ? words.take(20).join(' ') + '...' : content;
+        words.length > 20 ? '${words.take(20).join(' ')}...' : content;
 
     return [
       if (firstSection['title'] != 'PRODUCT DETAILS' &&
@@ -1078,10 +1084,10 @@ class CategoryAndTagsWidget extends StatelessWidget {
   final List<String> tags;
 
   const CategoryAndTagsWidget({
-    Key? key,
+    super.key,
     required this.category,
     required this.tags,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1148,7 +1154,7 @@ class CategoryAndTagsWidget extends StatelessWidget {
 class TagChip extends StatelessWidget {
   final String tag;
 
-  const TagChip({Key? key, required this.tag}) : super(key: key);
+  const TagChip({super.key, required this.tag});
 
   @override
   Widget build(BuildContext context) {

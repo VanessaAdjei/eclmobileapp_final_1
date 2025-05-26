@@ -5,16 +5,13 @@ import 'package:eclapp/pages/storelocation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'CartItem.dart';
 import 'ProductModel.dart';
 import 'auth_service.dart';
 import 'bottomnav.dart';
 import 'cache.dart';
-import 'cartprovider.dart';
 import 'clickableimage.dart';
 import 'itemdetail.dart';
 import 'package:shimmer/shimmer.dart';
@@ -22,6 +19,8 @@ import 'dart:async';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'search_results_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -57,19 +56,6 @@ class _HomePageState extends State<HomePage> {
     } else {
       print("Permission denied.");
     }
-  }
-
-  void _addToCart(BuildContext context, Product product) {
-    final cartProvider = Provider.of<CartProvider>(context, listen: false);
-    cartProvider.addToCart(
-      CartItem(
-        id: product.id.toString(),
-        name: product.name,
-        price: double.tryParse(product.price) ?? 0.0,
-        image: product.thumbnail,
-        quantity: 1,
-      ),
-    );
   }
 
   Future<bool> requireAuth(BuildContext context) async {
@@ -188,7 +174,9 @@ class _HomePageState extends State<HomePage> {
                 leading: Icon(Icons.call, color: Colors.green),
                 title: Text('Call'),
                 onTap: () {
-                  Navigator.pop(context);
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
                   _launchPhoneDialer(phoneNumber);
                   makePhoneCall(phoneNumber);
                 },
@@ -196,7 +184,9 @@ class _HomePageState extends State<HomePage> {
               ListTile(
                 leading: Icon(Icons.call_end_rounded, color: Colors.green),
                 onTap: () {
-                  Navigator.pop(context);
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
                   _launchWhatsApp(
                       phoneNumber, "Hello, I'm interested in your products!");
                 },
@@ -318,38 +308,59 @@ class _HomePageState extends State<HomePage> {
           },
         ),
         suggestionsCallback: (pattern) async {
-          if (pattern.isEmpty) return [];
-          if (pattern.length < 3) return [];
-          final matches = products
-              .where((product) =>
-                  product.name.toLowerCase().contains(pattern.toLowerCase()) ||
-                  (product.description
-                      .toLowerCase()
-                      .contains(pattern.toLowerCase())))
-              .toList();
-          if (matches.length > 6) {
-            final result = [
-              Product(
-                id: -1,
-                name: '__VIEW_MORE__',
-                description: '',
-                urlName: '',
-                status: '',
-                price: '',
-                thumbnail: '',
-                quantity: '',
-                category: '',
-                route: '',
-              ),
-              ...matches.take(6),
-            ];
-            print('TypeAhead suggestions (with View All): ' +
-                result.map((e) => e.name).toList().toString());
-            return result;
+          if (pattern.isEmpty) {
+            return [];
           }
-          print('TypeAhead suggestions: ' +
-              matches.map((e) => e.name).toList().toString());
-          return matches;
+          try {
+            final response = await http.get(
+              Uri.parse(
+                  'https://eclcommerce.ernestchemists.com.gh/api/search/' +
+                      pattern),
+            );
+            if (response.statusCode == 200) {
+              final data = json.decode(response.body);
+              final List productsData = data['data'] ?? [];
+              final products = productsData.map<Product>((item) {
+                return Product(
+                  id: item['id'] ?? 0,
+                  name: item['name'] ?? 'No name',
+                  description: item['tag_description'] ?? '',
+                  urlName: item['url_name'] ?? '',
+                  status: item['status'] ?? '',
+                  batch_no: item['batch_no'] ?? '',
+                  price:
+                      (item['price'] ?? item['selling_price'] ?? 0).toString(),
+                  thumbnail: item['thumbnail'] ?? item['image'] ?? '',
+                  quantity: item['quantity']?.toString() ?? '',
+                  category: item['category'] ?? '',
+                  route: item['route'] ?? '',
+                );
+              }).toList();
+              if (products.length > 1) {
+                return [
+                  Product(
+                    id: -1,
+                    name: '__VIEW_MORE__',
+                    description: '',
+                    urlName: '',
+                    status: '',
+                    price: '',
+                    thumbnail: '',
+                    quantity: '',
+                    batch_no: '',
+                    category: '',
+                    route: '',
+                  ),
+                  ...products.take(6),
+                ];
+              }
+              return products;
+            }
+            return [];
+          } catch (e) {
+            print('Search API error: $e');
+            return [];
+          }
         },
         itemBuilder: (context, Product suggestion) {
           if (suggestion.name == '__VIEW_MORE__') {
@@ -367,27 +378,45 @@ class _HomePageState extends State<HomePage> {
               ),
             );
           }
+          // Try to find the product in the products list by id or name
+          final matchingProduct = products.firstWhere(
+            (p) => p.id == suggestion.id || p.name == suggestion.name,
+            orElse: () => suggestion,
+          );
+          final imageUrl = getProductImageUrl(
+              matchingProduct.thumbnail.isNotEmpty
+                  ? matchingProduct.thumbnail
+                  : suggestion.thumbnail);
+          print(
+              'Search suggestion: \\${suggestion.name}, thumbnail: \\${suggestion.thumbnail}, used thumbnail: \\${matchingProduct.thumbnail}, imageUrl: \\${imageUrl}');
           return ListTile(
-            leading: suggestion.thumbnail.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: suggestion.thumbnail,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    errorWidget: (context, url, error) =>
-                        Icon(Icons.medical_services),
-                  )
-                : Icon(Icons.medical_services),
+            leading: CachedNetworkImage(
+              imageUrl: imageUrl,
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              errorWidget: (context, url, error) => Icon(Icons.broken_image),
+            ),
             title: Text(suggestion.name),
-            subtitle: Text('GHS ${suggestion.price}'),
+            subtitle: (suggestion.price.isNotEmpty && suggestion.price != '0')
+                ? Text('GHS ${suggestion.price}')
+                : null,
           );
         },
         onSuggestionSelected: (Product suggestion) {
+          final matchingProduct = products.firstWhere(
+            (p) => p.id == suggestion.id || p.name == suggestion.name,
+            orElse: () => suggestion,
+          );
+          final urlName = matchingProduct.urlName.isNotEmpty
+              ? matchingProduct.urlName
+              : suggestion.urlName;
+          print('Navigating to item page with urlName: $urlName');
           if (suggestion.name == '__VIEW_MORE__') {
             Navigator.push(
               context,
@@ -402,7 +431,7 @@ class _HomePageState extends State<HomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ItemPage(urlName: suggestion.urlName),
+                builder: (context) => ItemPage(urlName: urlName),
               ),
             );
           }
@@ -414,7 +443,7 @@ class _HomePageState extends State<HomePage> {
         ),
         hideOnEmpty: true,
         hideOnLoading: false,
-        debounceDuration: Duration(milliseconds: 300),
+        debounceDuration: Duration(milliseconds: 100),
         suggestionsBoxDecoration: SuggestionsBoxDecoration(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -756,46 +785,71 @@ class _HomePageState extends State<HomePage> {
                                   },
                                 ),
                                 suggestionsCallback: (pattern) async {
+                                  print('Searching for: ' + pattern);
                                   if (pattern.isEmpty) return [];
-                                  if (pattern.length < 3) return [];
-                                  final matches = products
-                                      .where((product) =>
-                                          product.name.toLowerCase().contains(
-                                              pattern.toLowerCase()) ||
-                                          (product.description
-                                              .toLowerCase()
-                                              .contains(pattern.toLowerCase())))
-                                      .toList();
-                                  if (matches.length > 6) {
-                                    final result = [
-                                      Product(
-                                        id: -1,
-                                        name: '__VIEW_MORE__',
-                                        description: '',
-                                        urlName: '',
-                                        status: '',
-                                        price: '',
-                                        thumbnail: '',
-                                        quantity: '',
-                                        category: '',
-                                        route: '',
-                                      ),
-                                      ...matches.take(6),
-                                    ];
+                                  if (pattern.length < 2) return [];
+                                  try {
+                                    final response = await http.get(
+                                      Uri.parse(
+                                          'https://eclcommerce.ernestchemists.com.gh/api/search/' +
+                                              Uri.encodeComponent(pattern)),
+                                    );
                                     print(
-                                        'TypeAhead suggestions (with View All): ' +
-                                            result
-                                                .map((e) => e.name)
-                                                .toList()
-                                                .toString());
-                                    return result;
+                                        'Status code: \\${response.statusCode}');
+                                    print('Response body: \\${response.body}');
+                                    if (response.statusCode == 200) {
+                                      final data = json.decode(response.body);
+                                      // Adjust this parsing based on the actual API response structure
+                                      final List productsData =
+                                          data['data'] ?? [];
+                                      final products =
+                                          productsData.map<Product>((item) {
+                                        return Product(
+                                          id: item['id'] ?? 0,
+                                          name: item['name'] ?? 'No name',
+                                          description:
+                                              item['tag_description'] ?? '',
+                                          urlName: item['url_name'] ?? '',
+                                          status: item['status'] ?? '',
+                                          batch_no: item['batch_no'] ?? '',
+                                          price:
+                                              (item['price'] ?? 0).toString(),
+                                          thumbnail: item['thumbnail'] ?? '',
+                                          quantity: item['quantity'] ?? '',
+                                          category: item['category'] ?? '',
+                                          route: item['route'] ?? '',
+                                        );
+                                      }).toList();
+                                      if (products.length > 6) {
+                                        final result = [
+                                          Product(
+                                            id: -1,
+                                            name: '__VIEW_MORE__',
+                                            description: '',
+                                            urlName: '',
+                                            status: '',
+                                            price: '',
+                                            thumbnail: '',
+                                            quantity: '',
+                                            batch_no: '',
+                                            category: '',
+                                            route: '',
+                                          ),
+                                          ...products.take(6),
+                                        ];
+                                        print(
+                                            'TypeAhead suggestions (with View All): \\${result.map((e) => e.name).toList()}');
+                                        return result;
+                                      }
+                                      print(
+                                          'TypeAhead suggestions: \\${products.map((e) => e.name).toList()}');
+                                      return products;
+                                    }
+                                    return [];
+                                  } catch (e) {
+                                    print('Search API error: $e');
+                                    return [];
                                   }
-                                  print('TypeAhead suggestions: ' +
-                                      matches
-                                          .map((e) => e.name)
-                                          .toList()
-                                          .toString());
-                                  return matches;
                                 },
                                 itemBuilder: (context, Product suggestion) {
                                   if (suggestion.name == '__VIEW_MORE__') {
@@ -814,30 +868,42 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     );
                                   }
+                                  final imageUrl =
+                                      getProductImageUrl(suggestion.thumbnail);
+                                  print(
+                                      'Search suggestion: \\${suggestion.name}, thumbnail: \\${suggestion.thumbnail}, imageUrl: \\${imageUrl}');
                                   return ListTile(
-                                    leading: suggestion.thumbnail.isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: suggestion.thumbnail,
-                                            width: 40,
-                                            height: 40,
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) =>
-                                                SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: CircularProgressIndicator(
-                                                  strokeWidth: 2),
-                                            ),
-                                            errorWidget: (context, url,
-                                                    error) =>
-                                                Icon(Icons.medical_services),
-                                          )
-                                        : Icon(Icons.medical_services),
+                                    leading: CachedNetworkImage(
+                                      imageUrl: imageUrl,
+                                      width: 40,
+                                      height: 40,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          Icon(Icons.broken_image),
+                                    ),
                                     title: Text(suggestion.name),
                                     subtitle: Text('GHS ${suggestion.price}'),
                                   );
                                 },
                                 onSuggestionSelected: (Product suggestion) {
+                                  final matchingProduct = products.firstWhere(
+                                    (p) =>
+                                        p.id == suggestion.id ||
+                                        p.name == suggestion.name,
+                                    orElse: () => suggestion,
+                                  );
+                                  final urlName =
+                                      matchingProduct.urlName.isNotEmpty
+                                          ? matchingProduct.urlName
+                                          : suggestion.urlName;
+                                  print(
+                                      'Navigating to item page with urlName: $urlName');
                                   if (suggestion.name == '__VIEW_MORE__') {
                                     Navigator.push(
                                       context,
@@ -852,8 +918,8 @@ class _HomePageState extends State<HomePage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => ItemPage(
-                                            urlName: suggestion.urlName),
+                                        builder: (context) =>
+                                            ItemPage(urlName: urlName),
                                       ),
                                     );
                                   }
@@ -865,7 +931,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 hideOnEmpty: true,
                                 hideOnLoading: false,
-                                debounceDuration: Duration(milliseconds: 300),
+                                debounceDuration: Duration(milliseconds: 100),
                                 suggestionsBoxDecoration:
                                     SuggestionsBoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
@@ -1529,4 +1595,10 @@ class _OrderMedicineCardState extends State<_OrderMedicineCard> {
       ),
     );
   }
+}
+
+String getProductImageUrl(String? url) {
+  if (url == null || url.isEmpty) return '';
+  if (url.startsWith('http')) return url;
+  return 'https://eclcommerce.ernestchemists.com.gh$url';
 }

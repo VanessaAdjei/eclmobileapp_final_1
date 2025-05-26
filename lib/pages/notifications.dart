@@ -1,9 +1,12 @@
+// pages/notifications.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bottomnav.dart';
 import 'cart.dart';
+import 'homepage.dart';
+import 'AppBackButton.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -28,24 +31,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       Set<String> keys = prefs.getKeys();
 
       // Check if there are any notification keys
-      List<String> notificationKeys = keys
-          .where((key) => key.startsWith('notification_'))
-          .toList();
+      List<String> notificationKeys =
+          keys.where((key) => key.startsWith('notification_')).toList();
 
       if (notificationKeys.isNotEmpty) {
         for (var key in notificationKeys) {
           List<String>? notificationStrings = prefs.getStringList(key);
           if (notificationStrings != null && notificationStrings.isNotEmpty) {
             try {
-              List<Map<String, dynamic>> notifications = notificationStrings
-                  .map((item) {
-                Map<String, dynamic> notification = Map<String, dynamic>.from(jsonDecode(item));
+              List<Map<String, dynamic>> notifications =
+                  notificationStrings.map((item) {
+                Map<String, dynamic> notification =
+                    Map<String, dynamic>.from(jsonDecode(item));
                 // Convert string 'true'/'false' to boolean if needed
-                notification['expanded'] = _convertToBoolean(notification['expanded']);
+                notification['expanded'] =
+                    _convertToBoolean(notification['expanded']);
                 notification['read'] = _convertToBoolean(notification['read']);
                 return notification;
-              })
-                  .toList();
+              }).toList();
 
               // Extract the actual date from the key (removing the 'notification_' prefix)
               String dateKey = key.replaceFirst('notification_', '');
@@ -98,11 +101,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await Future.forEach(groupedNotifications.entries, (entry) async {
         String date = entry.key;
         List<Map<String, dynamic>> notifications = entry.value;
-        List<String> notificationStrings = notifications.map((notif) => jsonEncode(notif)).toList();
+        List<String> notificationStrings =
+            notifications.map((notif) => jsonEncode(notif)).toList();
         await prefs.setStringList('notification_$date', notificationStrings);
       });
 
-      print('Notifications saved successfully. Count: ${groupedNotifications.length}');
+      print(
+          'Notifications saved successfully. Count: ${groupedNotifications.length}');
     } catch (e) {
       print('Error saving notifications: $e');
     }
@@ -122,10 +127,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       groupedNotifications[formattedDate] = [];
 
       // Add different types of notifications for each day
-      if (i == 0) { // Today
+      if (i == 0) {
+        // Today
         groupedNotifications[formattedDate]!.add({
           'title': 'Order Confirmation',
-          'message': 'Your order for Pain Relief Tablets has been confirmed and is being processed. You will receive a tracking number soon.',
+          'message':
+              'Your order for Pain Relief Tablets has been confirmed and is being processed. You will receive a tracking number soon.',
           'time': '2:15 PM',
           'expanded': false,
           'read': false,
@@ -134,16 +141,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
         groupedNotifications[formattedDate]!.add({
           'title': 'Shipping Update',
-          'message': 'Your order has been shipped and is on its way! Track your package with the tracking number provided.',
+          'message':
+              'Your order has been shipped and is on its way! Track your package with the tracking number provided.',
           'time': '3:45 PM',
           'expanded': false,
           'read': false,
           'icon': 'shipping',
         });
-      } else if (i == 1) { // Yesterday
+      } else if (i == 1) {
+        // Yesterday
         groupedNotifications[formattedDate]!.add({
           'title': 'Product Available',
-          'message': 'The Vitamin D3 Supplement you requested is now back in stock! Order now before it runs out again.',
+          'message':
+              'The Vitamin D3 Supplement you requested is now back in stock! Order now before it runs out again.',
           'time': '9:00 AM',
           'expanded': false,
           'read': false,
@@ -152,16 +162,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
         groupedNotifications[formattedDate]!.add({
           'title': 'Order Delivered',
-          'message': 'Your order has been delivered. Thank you for shopping with us! We hope you enjoy your purchase.',
+          'message':
+              'Your order has been delivered. Thank you for shopping with us! We hope you enjoy your purchase.',
           'time': '5:30 PM',
           'expanded': false,
           'read': false,
           'icon': 'delivered',
         });
-      } else if (i == 2) { // 2 days ago
+      } else if (i == 2) {
+        // 2 days ago
         groupedNotifications[formattedDate]!.add({
           'title': 'Restock Reminder',
-          'message': 'It\'s time to refill your prescription for Blood Pressure Medication. Order now to avoid running out.',
+          'message':
+              'It\'s time to refill your prescription for Blood Pressure Medication. Order now to avoid running out.',
           'time': '8:00 AM',
           'expanded': false,
           'read': false,
@@ -170,43 +183,52 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
         groupedNotifications[formattedDate]!.add({
           'title': 'Payment Successful',
-          'message': 'Your payment for the order Pain Relief Bundle has been successfully processed. Thank you!',
+          'message':
+              'Your payment for the order Pain Relief Bundle has been successfully processed. Thank you!',
           'time': '2:50 PM',
           'expanded': false,
           'read': false,
           'icon': 'payment',
         });
-      } else if (i == 3) { // 3 days ago
+      } else if (i == 3) {
+        // 3 days ago
         groupedNotifications[formattedDate]!.add({
           'title': 'Weekly Health Tip',
-          'message': 'Remember to stay hydrated! Drinking enough water helps maintain healthy blood pressure and supports overall health.',
+          'message':
+              'Remember to stay hydrated! Drinking enough water helps maintain healthy blood pressure and supports overall health.',
           'time': '10:30 AM',
           'expanded': false,
           'read': false,
           'icon': 'reminder',
         });
-      } else if (i == 4) { // 4 days ago
+      } else if (i == 4) {
+        // 4 days ago
         groupedNotifications[formattedDate]!.add({
           'title': 'Order Status Update',
-          'message': 'Your order is currently being processed. We will notify you once it ships.',
+          'message':
+              'Your order is currently being processed. We will notify you once it ships.',
           'time': '7:45 PM',
           'expanded': false,
           'read': false,
           'icon': 'status',
         });
-      } else if (i == 5) { // 5 days ago
+      } else if (i == 5) {
+        // 5 days ago
         groupedNotifications[formattedDate]!.add({
           'title': 'Special Offer',
-          'message': 'Get 20% off on all vitamins this week! Use code HEALTH20 at checkout.',
+          'message':
+              'Get 20% off on all vitamins this week! Use code HEALTH20 at checkout.',
           'time': '11:20 AM',
           'expanded': false,
           'read': false,
           'icon': 'product',
         });
-      } else if (i == 6) { // 6 days ago
+      } else if (i == 6) {
+        // 6 days ago
         groupedNotifications[formattedDate]!.add({
           'title': 'Order Cancellation',
-          'message': 'Your order for Cough Syrup has been canceled due to an issue with payment. Please check your payment details.',
+          'message':
+              'Your order for Cough Syrup has been canceled due to an issue with payment. Please check your payment details.',
           'time': '6:30 PM',
           'expanded': false,
           'read': false,
@@ -215,7 +237,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
         groupedNotifications[formattedDate]!.add({
           'title': 'New Product Alert',
-          'message': 'Check out our new range of organic supplements now available in the store!',
+          'message':
+              'Check out our new range of organic supplements now available in the store!',
           'time': '4:15 PM',
           'expanded': false,
           'read': false,
@@ -226,8 +249,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       // Add a generic notification to each day
       groupedNotifications[formattedDate]!.add({
         'title': 'Daily Health Reminder',
-        'message': 'Remember to take your medications as prescribed and maintain a healthy routine.',
-        'time': i == 0 ? '8:00 AM' : '${8 + i % 4}:${i % 2 == 0 ? '00' : '30'} AM',
+        'message':
+            'Remember to take your medications as prescribed and maintain a healthy routine.',
+        'time':
+            i == 0 ? '8:00 AM' : '${8 + i % 4}:${i % 2 == 0 ? '00' : '30'} AM',
         'expanded': false,
         'read': false,
         'icon': 'reminder',
@@ -240,7 +265,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _toggleExpand(String group, int index) {
     setState(() {
-      bool isCurrentlyExpanded = _convertToBoolean(groupedNotifications[group]?[index]['expanded']);
+      bool isCurrentlyExpanded =
+          _convertToBoolean(groupedNotifications[group]?[index]['expanded']);
       groupedNotifications[group]?[index]['expanded'] = !isCurrentlyExpanded;
       groupedNotifications[group]?[index]['read'] = true;
     });
@@ -254,7 +280,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Clear All Notifications'),
-          content: const Text('Are you sure you want to clear all notifications?'),
+          content:
+              const Text('Are you sure you want to clear all notifications?'),
           actions: [
             TextButton(
               child: const Text('Cancel'),
@@ -338,7 +365,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        Navigator.pop(context);
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
         return Future.value(false);
       },
       child: Scaffold(
@@ -347,19 +376,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           backgroundColor: Colors.green[700],
           elevation: 0,
           centerTitle: true,
-          leading: Container(
-            margin: const EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.transparent,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ),
+          leading: AppBackButton(backgroundColor: Colors.transparent),
           title: const Text(
             'Notifications',
             style: TextStyle(
@@ -403,103 +420,111 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         body: isLoading
             ? Center(child: CircularProgressIndicator(color: Colors.green[700]))
             : groupedNotifications.isNotEmpty
-            ? ListView(
-          padding: const EdgeInsets.all(12.0),
-          children: [
-            ...groupedNotifications.entries.map((entry) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
-                    child: Row(
+                ? ListView(
+                    padding: const EdgeInsets.all(12.0),
+                    children: [
+                      ...groupedNotifications.entries.map((entry) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4.0, vertical: 8.0),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 30,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: Colors.green[700],
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    entry.key,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            if (entry.value.isNotEmpty)
+                              ...entry.value
+                                  .asMap()
+                                  .entries
+                                  .map((notification) {
+                                int index = notification.key;
+                                return _buildNotificationTile(
+                                    entry.key, index, notification.value);
+                              }),
+                            const SizedBox(height: 16),
+                          ],
+                        );
+                      }),
+                    ],
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 30,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.green[700],
-                            borderRadius: BorderRadius.circular(2),
+                        Icon(Icons.notifications_off,
+                            size: 80, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          "No notifications yet",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(height: 8),
                         Text(
-                          entry.key,
+                          "When you receive notifications, they'll appear here",
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[800],
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              isLoading = true;
+                            });
+                            _addDailyNotifications();
+                            setState(() {
+                              isLoading = false;
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green[700],
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text(
+                            "Generate Sample Notifications",
+                            style: TextStyle(color: Colors.white),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  if (entry.value.isNotEmpty)
-                    ...entry.value.asMap().entries.map((notification) {
-                      int index = notification.key;
-                      return _buildNotificationTile(entry.key, index, notification.value);
-                    }),
-                  const SizedBox(height: 16),
-                ],
-              );
-            }),
-          ],
-        )
-            : Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.notifications_off, size: 80, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              Text(
-                "No notifications yet",
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "When you receive notifications, they'll appear here",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[500],
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    isLoading = true;
-                  });
-                  _addDailyNotifications();
-                  setState(() {
-                    isLoading = false;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  "Generate Sample Notifications",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-        ),
         bottomNavigationBar: const CustomBottomNav(),
       ),
     );
   }
 
-  Widget _buildNotificationTile(String group, int index, Map<String, dynamic> notification) {
+  Widget _buildNotificationTile(
+      String group, int index, Map<String, dynamic> notification) {
     bool isExpanded = _convertToBoolean(notification['expanded']);
     bool isRead = _convertToBoolean(notification['read']);
     IconData iconData = _getIconForNotification(notification['icon']);
@@ -569,7 +594,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 child: Text(
                                   notification['title'] ?? '',
                                   style: TextStyle(
-                                    fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
+                                    fontWeight: isRead
+                                        ? FontWeight.w600
+                                        : FontWeight.bold,
                                     fontSize: 16,
                                     color: Colors.black87,
                                   ),
@@ -590,7 +617,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           Text(
                             notification['message'] ?? '',
                             maxLines: isExpanded ? null : 2,
-                            overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                            overflow: isExpanded
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.grey[700],
                               height: 1.3,
@@ -639,10 +668,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         onPressed: () {
                           _deleteNotification(group, index);
                         },
-                        icon: Icon(Icons.delete_outline, size: 16, color: Colors.red[400]),
+                        icon: Icon(Icons.delete_outline,
+                            size: 16, color: Colors.red[400]),
                         label: Text(
                           'Delete',
-                          style: TextStyle(color: Colors.red[400], fontSize: 13),
+                          style:
+                              TextStyle(color: Colors.red[400], fontSize: 13),
                         ),
                         style: TextButton.styleFrom(
                           minimumSize: const Size(120, 36),

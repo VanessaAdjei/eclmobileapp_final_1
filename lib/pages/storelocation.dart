@@ -1,8 +1,8 @@
-
+// pages/storelocation.dart
 import 'package:flutter/material.dart';
 import 'Cart.dart';
 import 'bottomnav.dart';
-
+import 'AppBackButton.dart';
 
 class StoreSelectionPage extends StatefulWidget {
   const StoreSelectionPage({super.key});
@@ -12,8 +12,12 @@ class StoreSelectionPage extends StatefulWidget {
 }
 
 class _StoreSelectionPageState extends State<StoreSelectionPage> {
-
-  final List<String> regions = ['Greater Accra', 'Volta', 'Ashanti', 'Northern'];
+  final List<String> regions = [
+    'Greater Accra',
+    'Volta',
+    'Ashanti',
+    'Northern'
+  ];
   final List<City> cities = [
     City(name: 'City 1', region: 'Greater Accra'),
     City(name: 'City 2', region: 'Greater Accra'),
@@ -37,7 +41,6 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
     Store(name: 'Store G', city: 'City 7', region: 'Volta'),
   ];
 
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -45,24 +48,12 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
         Navigator.pop(context);
         return Future.value(false);
       },
-      child:  Scaffold(
+      child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.green.shade700,
           elevation: 0,
           centerTitle: true,
-          leading: Container(
-            margin: EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.green[400],
-            ),
-            child: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ),
+          leading: AppBackButton(),
           title: Text(
             'Store Locations',
             style: TextStyle(
@@ -77,9 +68,8 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.green[700],
-
               ),
-              child:          IconButton(
+              child: IconButton(
                 icon: Icon(Icons.shopping_cart, color: Colors.white),
                 onPressed: () {
                   Navigator.push(
@@ -145,7 +135,9 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                       onChanged: (String? newValue) {
                         setState(() {
                           selectedCity = newValue;
-                          selectedRegion = cities.firstWhere((city) => city.name == newValue).region;
+                          selectedRegion = cities
+                              .firstWhere((city) => city.name == newValue)
+                              .region;
                         });
                       },
                       style: TextStyle(
@@ -155,9 +147,9 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
                       ),
                       items: cities
                           .map((City city) => DropdownMenuItem<String>(
-                        value: city.name,
-                        child: Text(city.name),
-                      ))
+                                value: city.name,
+                                child: Text(city.name),
+                              ))
                           .toList(),
                     ),
                   ),
@@ -205,9 +197,6 @@ class Store {
   Store({required this.name, required this.city, required this.region});
 }
 
-
-
-
 class StoreListItem extends StatelessWidget {
   final Store store;
 
@@ -215,8 +204,7 @@ class StoreListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    return  Card(
+    return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),

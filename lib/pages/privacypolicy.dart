@@ -1,6 +1,9 @@
+// pages/privacypolicy.dart
 import 'package:flutter/material.dart';
 
 import 'Cart.dart';
+import 'HomePage.dart';
+import 'AppBackButton.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
@@ -12,21 +15,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
         backgroundColor: Colors.green.shade700,
         elevation: 0,
         centerTitle: true,
-        leading: Container(
-          margin: EdgeInsets.all(8.0),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.green[400],
-          ),
-          child: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ),
+        leading: AppBackButton(),
         title: Text(
-         'Privacy Policy',
+          'Privacy Policy',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -39,9 +30,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.green[700],
-
             ),
-            child:          IconButton(
+            child: IconButton(
               icon: Icon(Icons.shopping_cart, color: Colors.white),
               onPressed: () {
                 Navigator.push(
@@ -60,7 +50,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text( // Use const
+            const Text(
+              // Use const
               'Privacy Policy',
               style: TextStyle(
                 fontSize: 28,
@@ -70,27 +61,40 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24), // Increased spacing
 
-
-
-
-            const Text( // Use const
+            const Text(
+              // Use const
               'We value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and disclose information about you when you use our services.',
-              style: TextStyle(fontSize: 16, color: Colors.black87, height: 1.5), // Added height for better readability
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                  height: 1.5), // Added height for better readability
             ),
             const SizedBox(height: 16), // Consistent spacing
-            const Text( // Use const
+            const Text(
+              // Use const
               'Data Collection: We collect personal information such as your name, email address, and payment details when you register with us or use our services.',
-              style: TextStyle(fontSize: 16, color: Colors.black87, height: 1.5), // Added height
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                  height: 1.5), // Added height
             ),
             const SizedBox(height: 16), // Consistent spacing
-            const Text( // Use const
+            const Text(
+              // Use const
               'Data Use: The data we collect is used to provide you with our services, improve our offerings, and communicate with you.',
-              style: TextStyle(fontSize: 16, color: Colors.black87, height: 1.5), // Added height
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                  height: 1.5), // Added height
             ),
             const SizedBox(height: 16), // Consistent spacing
-            const Text( // Use const
+            const Text(
+              // Use const
               'Third-Party Sharing: We do not share your personal information with third parties without your consent, except as required by law.',
-              style: TextStyle(fontSize: 16, color: Colors.black87, height: 1.5), // Added height
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                  height: 1.5), // Added height
             ),
 
             const SizedBox(height: 24), // Increased spacing

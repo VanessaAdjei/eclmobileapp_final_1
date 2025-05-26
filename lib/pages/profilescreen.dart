@@ -1,3 +1,4 @@
+// pages/profilescreen.dart
 import 'package:eclapp/pages/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -12,6 +13,7 @@ import 'Cart.dart';
 import 'auth_service.dart';
 import 'bottomnav.dart';
 import 'loggedout.dart';
+import 'homepage.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,7 +27,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userName = "User";
   String _userEmail = "No email available";
   String _phoneNumber = "";
-  String? _profileImagePath;
 
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
@@ -42,7 +43,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneNumberController = TextEditingController(text: _phoneNumber);
     _loadUserData();
     _loadProfileImage();
-
   }
 
   @override
@@ -52,8 +52,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneNumberController.dispose();
     super.dispose();
   }
-
-
 
   Future<bool> _checkAndRequestGalleryPermission() async {
     if (Platform.isAndroid) {
@@ -69,16 +67,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return false;
   }
 
-
-
   void _showLogoutDialog() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             "Logout",
             style: GoogleFonts.poppins(
@@ -94,7 +92,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomePage()),
+                  );
+                }
+              },
               child: Text(
                 "Cancel",
                 style: GoogleFonts.poppins(
@@ -116,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => LoggedOutScreen()),
-                      (route) => false,
+                  (route) => false,
                 );
               },
               child: Text(
@@ -130,7 +137,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-
   Future<void> _pickImage() async {
     final hasPermission = await _checkAndRequestGalleryPermission();
 
@@ -141,7 +147,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context: context,
           builder: (context) => AlertDialog(
             title: Text("Permission Required"),
-            content: Text("We need gallery access to let you choose profile pictures"),
+            content: Text(
+                "We need gallery access to let you choose profile pictures"),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -169,12 +176,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: const Text('Gallery'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                  final XFile? image =
+                      await _picker.pickImage(source: ImageSource.gallery);
                   if (image != null) {
-                    File savedImage = await _saveImageToLocalStorage(File(image.path));
+                    File savedImage =
+                        await _saveImageToLocalStorage(File(image.path));
                     setState(() {
                       _profileImage = savedImage;
-                      _profileImagePath = savedImage.path;
                     });
                   }
                 },
@@ -184,12 +192,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: const Text('Camera'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+                  final XFile? image =
+                      await _picker.pickImage(source: ImageSource.camera);
                   if (image != null) {
-                    File savedImage = await _saveImageToLocalStorage(File(image.path));
+                    File savedImage =
+                        await _saveImageToLocalStorage(File(image.path));
                     setState(() {
                       _profileImage = savedImage;
-                      _profileImagePath = savedImage.path;
                     });
                   }
                 },
@@ -216,7 +225,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (savedImagePath != null && await File(savedImagePath).exists()) {
       setState(() {
         _profileImage = File(savedImagePath);
-        _profileImagePath = savedImagePath;
       });
     }
   }
@@ -225,7 +233,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final secureStorage = FlutterSecureStorage();
 
     String name = await secureStorage.read(key: 'userName') ?? "User";
-    String email = await secureStorage.read(key: 'userEmail') ?? "No email available";
+    String email =
+        await secureStorage.read(key: 'userEmail') ?? "No email available";
     String? phoneNumber = await secureStorage.read(key: 'userPhoneNumber') ??
         await secureStorage.read(key: 'userPhoneNumber') ??
         await secureStorage.read(key: 'userPhone');
@@ -245,11 +254,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final secureStorage = FlutterSecureStorage();
 
     await secureStorage.write(key: 'userName', value: _userNameController.text);
-    await secureStorage.write(key: AuthService.userNameKey, value: _userNameController.text);
+    await secureStorage.write(
+        key: AuthService.userNameKey, value: _userNameController.text);
 
     ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Profile updated successfully"))
-    );
+        const SnackBar(content: Text("Profile updated successfully")));
 
     setState(() {
       _userName = _userNameController.text;
@@ -270,14 +279,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           titleSpacing: 0,
           title: const Text(
             'My Profile',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.shopping_cart, color: Colors.white, size: 20),
+              icon: const Icon(Icons.shopping_cart,
+                  color: Colors.white, size: 20),
               padding: const EdgeInsets.all(8),
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const Cart()));
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => const Cart()));
               },
             ),
           ],
@@ -291,7 +303,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildProfileDetails(),
           ],
         ),
-
       ),
       bottomNavigationBar: const CustomBottomNav(),
     );
@@ -329,7 +340,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     backgroundColor: Colors.grey[300],
                     backgroundImage: _profileImage != null
                         ? FileImage(_profileImage!)
-                        : const AssetImage("assets/images/default_avatar.png") as ImageProvider,
+                        : const AssetImage("assets/images/default_avatar.png")
+                            as ImageProvider,
                   ),
                 ),
                 Positioned(
@@ -350,7 +362,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.camera_alt, size: 20, color: Colors.green),
+                      child: const Icon(Icons.camera_alt,
+                          size: 20, color: Colors.green),
                     ),
                   ),
                 ),
@@ -435,7 +448,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 30),
           ElevatedButton(
-              onPressed: _showLogoutDialog,
+            onPressed: _showLogoutDialog,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green.shade700,
               foregroundColor: Colors.white,
@@ -487,23 +500,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               isEditing
                   ? TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              )
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    )
                   : Text(
-                controller.text,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+                      controller.text,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
             ],
           ),
         ),

@@ -1,6 +1,9 @@
+// pages/changepassword.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'Cart.dart';
+import 'HomePage.dart';
+import 'AppBackButton.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -13,9 +16,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _storage = FlutterSecureStorage();
 
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
@@ -64,7 +69,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           return;
         }
 
-        await _storage.write(key: 'password', value: _newPasswordController.text);
+        await _storage.write(
+            key: 'password', value: _newPasswordController.text);
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -97,18 +103,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           titleSpacing: 0,
           title: const Text(
             'Change Password',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
           ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-            padding: const EdgeInsets.all(8),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
+          leading: AppBackButton(),
           actions: [
             IconButton(
-              icon: const Icon(Icons.shopping_cart, color: Colors.white, size: 20),
+              icon: const Icon(Icons.shopping_cart,
+                  color: Colors.white, size: 20),
               padding: const EdgeInsets.all(8),
               onPressed: () {
                 Navigator.push(
@@ -290,17 +292,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               ),
               child: _isLoading
                   ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
                   : const Text(
-                "Update Password",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
+                      "Update Password",
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
             ),
           ],
         ),
@@ -325,10 +328,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-        prefixIcon: Icon(Icons.lock_outline, color: Colors.green.shade600, size: 20),
+        prefixIcon:
+            Icon(Icons.lock_outline, color: Colors.green.shade600, size: 20),
         suffixIcon: IconButton(
           icon: Icon(
-            obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            obscureText
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             color: Colors.green.shade600,
             size: 20,
           ),
@@ -336,7 +342,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         ),
         filled: true,
         fillColor: Colors.grey.shade50,
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300, width: 1),

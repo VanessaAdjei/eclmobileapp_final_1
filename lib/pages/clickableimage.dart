@@ -1,3 +1,4 @@
+// pages/clickableimage.dart
 import 'package:eclapp/pages/prescription.dart';
 import 'package:flutter/material.dart';
 
@@ -8,60 +9,78 @@ class ClickableImageButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 16),
       child: Material(
-        elevation: 4,
-        borderRadius: BorderRadius.circular(12),
+        elevation: 8,
+        borderRadius: BorderRadius.circular(16),
+        shadowColor: Colors.green.withOpacity(0.18),
         child: InkWell(
           onTap: () {
-
-          Navigator.push(
+            Navigator.push(
               context,
-             MaterialPageRoute(builder: (context) => PrescriptionUploadPage()),
-         );
-        },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: EdgeInsets.symmetric(vertical: 16),
+              MaterialPageRoute(builder: (context) => PrescriptionUploadPage()),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          splashColor: Colors.green.shade100,
+          highlightColor: Colors.green.shade50,
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 120),
+            curve: Curves.easeInOut,
+            padding: EdgeInsets.symmetric(vertical: 22, horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.green.shade700,
-              borderRadius: BorderRadius.circular(12),
               gradient: LinearGradient(
-                colors: [Colors.green.shade700, Colors.green],
+                colors: [
+                  Colors.green.shade800,
+                  Colors.green.shade600,
+                  Colors.green.shade400
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.withOpacity(0.13),
+                  blurRadius: 16,
+                  offset: Offset(0, 8),
+                ),
+              ],
             ),
             child: Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.receipt,
+                    Icons.receipt_long,
                     color: Colors.white,
+                    size: 30,
                   ),
-                  SizedBox(width: 8),
+                  SizedBox(width: 14),
                   Text(
-                    'SUBMIT YOUR PRESCRIPTION',
+                    'Submit Prescription',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 2,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-
             ),
           ),
         ),
       ),
     );
-
-
   }
 }

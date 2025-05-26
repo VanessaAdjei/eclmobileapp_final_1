@@ -1,3 +1,4 @@
+// pages/createaccount.dart
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'otp.dart';
@@ -18,7 +19,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
   final TextEditingController phoneNumberController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -87,8 +89,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.arrow_back_rounded, color: Colors.green.shade800),
-                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.arrow_back_rounded,
+                        color: Colors.green.shade800),
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                    },
                   ),
                   Center(
                     child: Column(
@@ -120,7 +127,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
 
                   const SizedBox(height: 30),
-
 
                   _buildTextField(
                     'Full Name',
@@ -173,9 +179,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       LengthLimitingTextInputFormatter(13), // +233 + 10 digits
                     ],
                     prefixText: '+233 ',
-                    onChanged: (value) {
-
-                    },
+                    onChanged: (value) {},
                   ),
 
                   const SizedBox(height: 10),
@@ -185,7 +189,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     Icons.lock_outline_rounded,
                     passwordController,
                     _passwordVisible,
-                        () => setState(() => _passwordVisible = !_passwordVisible),
+                    () => setState(() => _passwordVisible = !_passwordVisible),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a password';
@@ -204,7 +208,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     Icons.lock_outline_rounded,
                     confirmPasswordController,
                     _confirmPasswordVisible,
-                        () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
+                    () => setState(() =>
+                        _confirmPasswordVisible = !_confirmPasswordVisible),
                     validator: (value) {
                       if (value != passwordController.text) {
                         return 'Passwords do not match';
@@ -221,7 +226,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         scale: 0.9,
                         child: Checkbox(
                           value: _termsAgreed,
-                          onChanged: (value) => setState(() => _termsAgreed = value ?? false),
+                          onChanged: (value) =>
+                              setState(() => _termsAgreed = value ?? false),
                           activeColor: Colors.green.shade600,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
@@ -295,7 +301,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const SignInScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => const SignInScreen()),
                         );
                       },
                       child: RichText(
@@ -342,15 +349,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildTextField(
-      String label,
-      IconData icon,
-      TextEditingController controller, {
-        TextInputType? keyboardType,
-        String? Function(String?)? validator,
-        List<TextInputFormatter>? inputFormatters,
-        String? prefixText,
-        void Function(String)? onChanged,
-      }) {
+    String label,
+    IconData icon,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
+    String? prefixText,
+    void Function(String)? onChanged,
+  }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -381,13 +388,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildPasswordField(
-      String label,
-      IconData icon,
-      TextEditingController controller,
-      bool isVisible,
-      VoidCallback onPressed, {
-        String? Function(String?)? validator,
-      }) {
+    String label,
+    IconData icon,
+    TextEditingController controller,
+    bool isVisible,
+    VoidCallback onPressed, {
+    String? Function(String?)? validator,
+  }) {
     return TextFormField(
       controller: controller,
       obscureText: !isVisible,
@@ -420,5 +427,4 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
-
 }

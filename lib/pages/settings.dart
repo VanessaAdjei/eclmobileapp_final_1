@@ -18,6 +18,8 @@ import 'bottomnav.dart';
 import 'cart.dart';
 import 'loggedout.dart';
 import 'notifications.dart';
+import 'homepage.dart';
+import 'AppBackButton.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -168,10 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: AppBackButton(),
         title: Text(
           'Settings',
           style: GoogleFonts.poppins(

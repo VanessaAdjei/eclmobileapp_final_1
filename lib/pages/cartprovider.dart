@@ -103,9 +103,7 @@ class CartProvider with ChangeNotifier {
     }
 
     // Ensure we have current user ID
-    if (_currentUserId == null) {
-      _currentUserId = (await AuthService.getCurrentUserID()) as String?;
-    }
+    _currentUserId ??= (await AuthService.getCurrentUserID());
 
     // Find if item already exists in cart
     int index =
@@ -118,6 +116,9 @@ class CartProvider with ChangeNotifier {
     }
 
     await _saveUserCarts();
+    final cartStatus = await AuthService.checkAuthWithCart();
+    print('Cart status after add:');
+    print(cartStatus);
     await _pushCartToServer();
     notifyListeners();
   }
@@ -173,10 +174,6 @@ class CartProvider with ChangeNotifier {
         0, (subtotal, item) => subtotal + (item.price * item.quantity));
   }
 
-  Future<void> _saveCart() async {
-    await _saveUserCarts();
-  }
-
   Future<void> _savePurchasedItems() async {
     if (_currentUserId == null) return;
 
@@ -208,25 +205,60 @@ class CartProvider with ChangeNotifier {
   }
 
   Future<void> syncWithApi() async {
-    if (_currentUserId == null) return;
+    print('syncWithApi called');
+    if (_currentUserId == null) {
+      print('No current user ID');
+      return;
+    }
 
     final authResult = await AuthService.checkAuthWithCart();
-    if (authResult['authenticated'] == true) {
-      final apiItems = authResult['cartItems'] as List;
-
-      final items = apiItems
+    print('syncWithApi backend response: $authResult');
+    if (authResult == null) {
+      print('authResult is null');
+      return;
+    }
+    if (authResult['authenticated'] == true ||
+        authResult['status'] == 'success') {
+      final apiItems = authResult['items'] as List?;
+      print('apiItems: $apiItems');
+      if (apiItems == null) {
+        print('apiItems is null');
+        return;
+      }
+      final serverCart = apiItems
           .map((item) => CartItem(
-                id: item['product_id'].toString(),
-                name: item['product_name'],
-                price: item['price'].toDouble(),
-                image: item['product_img'],
-                quantity: item['qty'],
+                id: item['product_id']?.toString() ??
+                    item['id']?.toString() ??
+                    '',
+                name: item['product_name'] ?? item['name'] ?? '',
+                price: (item['price'] is int || item['price'] is double)
+                    ? item['price'].toDouble()
+                    : double.tryParse(item['price'].toString()) ?? 0.0,
+                image: item['product_img'] ?? item['thumbnail'] ?? '',
+                quantity: item['qty'] ?? item['quantity'] ?? 1,
               ))
           .toList();
 
-      _cartItems = items;
+      // Merge local and server carts by summing quantities for same id
+      final Map<String, CartItem> merged = {};
+      for (final item in _cartItems) {
+        merged[item.id] = item;
+      }
+      for (final item in serverCart) {
+        if (merged.containsKey(item.id)) {
+          merged[item.id] = merged[item.id]!.copyWith(
+            quantity: merged[item.id]!.quantity + item.quantity,
+          );
+        } else {
+          merged[item.id] = item;
+        }
+      }
+      _cartItems = merged.values.toList();
       await _saveUserCarts();
+      await _pushCartToServer(); // Optionally push merged cart to server
       notifyListeners();
+    } else {
+      print('authResult did not pass the if condition');
     }
   }
 
@@ -267,5 +299,21 @@ class CartProvider with ChangeNotifier {
     if (_currentUserId == null) return;
     final items = _cartItems.map((item) => item.toJson()).toList();
     await AuthService.updateServerCart(items);
+  }
+
+  void setCartItems(List<CartItem> items) {
+    // Merge items with the same id by summing their quantities
+    final Map<String, CartItem> merged = {};
+    for (final item in items) {
+      if (merged.containsKey(item.id)) {
+        merged[item.id] = merged[item.id]!.copyWith(
+          quantity: merged[item.id]!.quantity + item.quantity,
+        );
+      } else {
+        merged[item.id] = item;
+      }
+    }
+    _cartItems = merged.values.toList();
+    notifyListeners();
   }
 }

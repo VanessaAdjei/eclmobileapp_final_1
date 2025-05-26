@@ -11,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bottomnav.dart';
 import 'cartprovider.dart';
+import 'AppBackButton.dart';
 
 class DeliveryPage extends StatefulWidget {
   const DeliveryPage({super.key});
@@ -42,7 +43,6 @@ class _DeliveryPageState extends State<DeliveryPage> {
   final GlobalKey addressSectionKey = GlobalKey();
   final GlobalKey pickupSectionKey = GlobalKey();
   final GlobalKey phoneSectionKey = GlobalKey();
-  final FocusNode _phoneFocusNode = FocusNode();
 
   @override
   void dispose() {
@@ -218,17 +218,11 @@ class _DeliveryPageState extends State<DeliveryPage> {
                   children: [
                     Row(
                       children: [
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
+                        AppBackButton(
+                          backgroundColor: Colors.green.shade700,
+                          onPressed: () {
                             Navigator.of(context).pop();
                           },
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            alignment: Alignment.center,
-                            child: Icon(Icons.arrow_back, color: Colors.white),
-                          ),
                         ),
                         Expanded(
                           child: Container(

@@ -1,13 +1,15 @@
+// pages/signinpage.dart
 import 'package:flutter/material.dart';
 import 'package:eclapp/pages/auth_service.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'createaccount.dart';
+import 'package:provider/provider.dart';
+import 'package:eclapp/pages/cartprovider.dart';
 
 class SignInScreen extends StatefulWidget {
   final String? returnTo;
   final VoidCallback? onSuccess;
 
-  const SignInScreen({super.key, this.onSuccess,this.returnTo});
+  const SignInScreen({super.key, this.onSuccess, this.returnTo});
 
   @override
   _SignInScreenState createState() => _SignInScreenState();
@@ -17,7 +19,6 @@ class _SignInScreenState extends State<SignInScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isResettingPassword = false;
@@ -34,16 +35,6 @@ class _SignInScreenState extends State<SignInScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -67,12 +58,19 @@ class _SignInScreenState extends State<SignInScreen> {
           authState.refreshAuthState();
         }
 
+        // Sync cart for logged-in user
+        final userId = await AuthService.getCurrentUserID();
+        if (userId != null) {
+          Provider.of<CartProvider>(context, listen: false)
+              .handleUserLogin(userId);
+        }
+
         widget.onSuccess?.call();
 
         if (widget.returnTo != null && widget.returnTo!.isNotEmpty) {
           Navigator.of(context).pushNamedAndRemoveUntil(
             widget.returnTo!,
-                (route) => false,
+            (route) => false,
           );
         } else {
           Navigator.pop(context, true);
@@ -88,11 +86,11 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _resetPassword() async {
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        final TextEditingController resetEmailController = TextEditingController();
+        final TextEditingController resetEmailController =
+            TextEditingController();
         resetEmailController.text = _emailController.text;
 
         return AlertDialog(
@@ -100,7 +98,8 @@ class _SignInScreenState extends State<SignInScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Enter your email address and we\'ll send you instructions to reset your password.'),
+              Text(
+                  'Enter your email address and we\'ll send you instructions to reset your password.'),
               SizedBox(height: 16),
               TextFormField(
                 controller: resetEmailController,
@@ -120,13 +119,15 @@ class _SignInScreenState extends State<SignInScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(
-                color: Colors.green,
-              )),
+              child: Text('Cancel',
+                  style: TextStyle(
+                    color: Colors.green,
+                  )),
             ),
             ElevatedButton(
               onPressed: () async {
-                if (resetEmailController.text.isEmpty || !resetEmailController.text.contains('@')) {
+                if (resetEmailController.text.isEmpty ||
+                    !resetEmailController.text.contains('@')) {
                   Navigator.pop(context);
                   _showError('Please enter a valid email address');
                   return;
@@ -197,9 +198,12 @@ class _SignInScreenState extends State<SignInScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
               ),
-              child: Text('Send Reset Link',style: TextStyle(
-                color: Colors.white,
-              ),),
+              child: Text(
+                'Send Reset Link',
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
             ),
           ],
         );
@@ -271,7 +275,8 @@ class _SignInScreenState extends State<SignInScreen> {
                               controller: _emailController,
                               decoration: InputDecoration(
                                 labelText: 'Email',
-                                prefixIcon: Icon(Icons.email, color: Colors.green),
+                                prefixIcon:
+                                    Icon(Icons.email, color: Colors.green),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
@@ -297,7 +302,8 @@ class _SignInScreenState extends State<SignInScreen> {
                               obscureText: _obscurePassword,
                               decoration: InputDecoration(
                                 labelText: 'Password',
-                                prefixIcon: Icon(Icons.lock, color: Colors.green),
+                                prefixIcon:
+                                    Icon(Icons.lock, color: Colors.green),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
@@ -305,7 +311,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                         : Icons.visibility,
                                     color: Colors.green,
                                   ),
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                  onPressed: () => setState(() =>
+                                      _obscurePassword = !_obscurePassword),
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
@@ -331,7 +338,6 @@ class _SignInScreenState extends State<SignInScreen> {
                               height: 50,
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _signIn,
-
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
                                   shape: RoundedRectangleBorder(
@@ -341,48 +347,51 @@ class _SignInScreenState extends State<SignInScreen> {
                                 ),
                                 child: _isLoading
                                     ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
                                     : const Text(
-                                  'SIGN IN',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white
-                                  ),
-                                ),
+                                        'SIGN IN',
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white),
+                                      ),
                               ),
                             ),
                             const SizedBox(height: 10),
 
                             // Forgot Password
                             TextButton(
-                              onPressed: _isResettingPassword ? null : _resetPassword,
+                              onPressed:
+                                  _isResettingPassword ? null : _resetPassword,
                               child: _isResettingPassword
                                   ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.blue.shade800,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text('Processing...', style: TextStyle(color: Colors.blue.shade800)),
-                                ],
-                              )
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.blue.shade800,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text('Processing...',
+                                            style: TextStyle(
+                                                color: Colors.blue.shade800)),
+                                      ],
+                                    )
                                   : Text(
-                                'Forgot Password?',
-                                style: TextStyle(color: Colors.blue.shade800),
-                              ),
+                                      'Forgot Password?',
+                                      style: TextStyle(
+                                          color: Colors.blue.shade800),
+                                    ),
                             ),
                           ],
                         ),

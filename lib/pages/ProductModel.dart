@@ -1,3 +1,4 @@
+// pages/ProductModel.dart
 class Product {
   final int id;
   final String name;
@@ -7,6 +8,7 @@ class Product {
   final String price;
   final String thumbnail;
   final String quantity;
+  final String batch_no;
   final String category;
   final String? route;
   final List<String> tags;
@@ -22,9 +24,9 @@ class Product {
     required this.quantity,
     required this.category,
     required this.route,
+    required this.batch_no,
     this.tags = const [],
   });
-
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
@@ -36,11 +38,10 @@ class Product {
       price: json['price']?.toString() ?? '0.00',
       thumbnail: json['thumbnail'] ?? '',
       quantity: json['quantity'] ?? '',
+      batch_no: json['batch_no'] ?? '',
       category: json['category'] ?? '',
       route: json['route'],
-      tags: json['tags'] != null
-          ? List<String>.from(json['tags'])
-          : [],
+      tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
     );
   }
 }

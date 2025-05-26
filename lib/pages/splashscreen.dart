@@ -1,3 +1,4 @@
+// pages/splashscreen.dart
 import 'package:flutter/material.dart';
 import 'package:eclapp/pages/homepage.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,7 +10,8 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   bool _isVisible = true;
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -37,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     });
 
     // Navigate to the homepage after a delay
-    Future.delayed(const Duration(seconds: 6), () {
+    Future.delayed(const Duration(seconds: 1), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomePage()),

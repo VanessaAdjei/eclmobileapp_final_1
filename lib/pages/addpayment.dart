@@ -1,9 +1,12 @@
+// pages/addpayment.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'Cart.dart';
 import 'auth_service.dart';
 import 'bottomnav.dart';
+import 'HomePage.dart';
+import 'AppBackButton.dart';
 
 class AddPaymentPage extends StatefulWidget {
   const AddPaymentPage({super.key});
@@ -22,7 +25,8 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
   final TextEditingController _cardNumberController = TextEditingController();
   final TextEditingController _expiryDateController = TextEditingController();
   final TextEditingController _cvvController = TextEditingController();
-  final TextEditingController _cardHolderNameController = TextEditingController();
+  final TextEditingController _cardHolderNameController =
+      TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
 
@@ -75,8 +79,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to load payment methods: $e'))
-        );
+            SnackBar(content: Text('Failed to load payment methods: $e')));
       }
     }
   }
@@ -84,7 +87,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
   Future<void> _savePaymentMethods() async {
     final prefs = await SharedPreferences.getInstance();
     final paymentMethodsJson =
-    _paymentMethods.map((method) => json.encode(method)).toList();
+        _paymentMethods.map((method) => json.encode(method)).toList();
     await prefs.setStringList('paymentMethods', paymentMethodsJson);
   }
 
@@ -122,12 +125,10 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
       await _savePaymentMethods();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Payment method saved successfully"),
-              backgroundColor: Colors.green,
-            )
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Payment method saved successfully"),
+          backgroundColor: Colors.green,
+        ));
         setState(() {
           _clearForm();
           _isLoading = false;
@@ -138,12 +139,10 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to save payment method: $e'),
-              backgroundColor: Colors.red,
-            )
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to save payment method: $e'),
+          backgroundColor: Colors.red,
+        ));
       }
     }
   }
@@ -164,7 +163,8 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Payment Method'),
-        content: const Text('Are you sure you want to delete this payment method?'),
+        content:
+            const Text('Are you sure you want to delete this payment method?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -177,12 +177,10 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
               });
               _savePaymentMethods();
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Payment method deleted"),
-                    backgroundColor: Colors.red,
-                  )
-              );
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text("Payment method deleted"),
+                backgroundColor: Colors.red,
+              ));
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -209,16 +207,14 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
           titleSpacing: 0,
           title: const Text(
             'Payment Methods',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
           ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-            padding: const EdgeInsets.all(8),
-            onPressed: () => Navigator.pop(context),
-          ),
+          leading: AppBackButton(),
           actions: [
             IconButton(
-              icon: const Icon(Icons.shopping_cart, color: Colors.white, size: 20),
+              icon: const Icon(Icons.shopping_cart,
+                  color: Colors.white, size: 20),
               padding: const EdgeInsets.all(8),
               onPressed: () {
                 Navigator.push(
@@ -233,15 +229,15 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            _buildPaymentMethodsList(),
-            _buildAddPaymentForm(),
-          ],
-        ),
-      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  _buildPaymentMethodsList(),
+                  _buildAddPaymentForm(),
+                ],
+              ),
+            ),
       bottomNavigationBar: const CustomBottomNav(),
     );
   }
@@ -249,7 +245,6 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.only(bottom: 20),
-
       child: Center(
         child: Column(
           children: [
@@ -356,9 +351,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
-                  isMomo
-                      ? method['number']!
-                      : method['expiry']!,
+                  isMomo ? method['number']! : method['expiry']!,
                   style: TextStyle(color: Colors.grey[600], fontSize: 13),
                 ),
                 trailing: IconButton(
@@ -411,7 +404,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
               'Payment Method',
               _selectedPaymentMethod,
               ['MoMo', 'Card'],
-                  (value) => setState(() => _selectedPaymentMethod = value),
+              (value) => setState(() => _selectedPaymentMethod = value),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please select a payment method';
@@ -425,7 +418,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
                 'MoMo Provider',
                 _selectedMoMoProvider,
                 ['Telecel', 'MTN', 'AirtelTigo'],
-                    (value) => setState(() => _selectedMoMoProvider = value),
+                (value) => setState(() => _selectedMoMoProvider = value),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please select a provider';
@@ -533,17 +526,18 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : const Text(
-                  'Save Payment Method',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
+                        'Save Payment Method',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
               ),
             ),
           ],
@@ -553,19 +547,20 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
   }
 
   Widget _buildDropdown(
-      String label,
-      String? value,
-      List<String> items,
-      ValueChanged<String?> onChanged, {
-        String? Function(String?)? validator,
-      }) {
+    String label,
+    String? value,
+    List<String> items,
+    ValueChanged<String?> onChanged, {
+    String? Function(String?)? validator,
+  }) {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
         filled: true,
         fillColor: Colors.grey.shade50,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
@@ -604,10 +599,13 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: Colors.green.shade600, size: 20) : null,
+        prefixIcon: prefixIcon != null
+            ? Icon(prefixIcon, color: Colors.green.shade600, size: 20)
+            : null,
         filled: true,
         fillColor: Colors.grey.shade50,
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300, width: 1),

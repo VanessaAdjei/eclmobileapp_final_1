@@ -1,3 +1,4 @@
+// pages/profile.dart
 import 'dart:io';
 import 'package:eclapp/pages/loggedout.dart';
 import 'package:eclapp/pages/purchases.dart';
@@ -15,6 +16,8 @@ import 'Cart.dart';
 import 'auth_service.dart';
 import 'bottomnav.dart';
 import 'notifications.dart';
+import 'HomePage.dart';
+import 'AppBackButton.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -59,7 +62,8 @@ class _ProfileState extends State<Profile> {
   Future<void> _loadUserData() async {
     final secureStorage = FlutterSecureStorage();
     String name = await secureStorage.read(key: 'userName') ?? "User";
-    String email = await secureStorage.read(key: 'userEmail') ?? "No email available";
+    String email =
+        await secureStorage.read(key: 'userEmail') ?? "No email available";
 
     setState(() {
       _userName = name;
@@ -101,7 +105,8 @@ class _ProfileState extends State<Profile> {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             "Confirm Logout",
             style: GoogleFonts.poppins(
@@ -138,8 +143,8 @@ class _ProfileState extends State<Profile> {
                 AuthService.logout().then((_) {
                   Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => LoggedOutScreen())
-                  );
+                      MaterialPageRoute(
+                          builder: (context) => LoggedOutScreen()));
                 });
               },
               child: Text(
@@ -160,7 +165,8 @@ class _ProfileState extends State<Profile> {
 
     // Color scheme
     final primaryColor = isDark ? Colors.green.shade400 : Colors.green.shade700;
-    final backgroundColor = isDark ? Colors.grey.shade900 : Colors.grey.shade100;
+    final backgroundColor =
+        isDark ? Colors.grey.shade900 : Colors.grey.shade100;
     final cardColor = isDark ? Colors.grey.shade800 : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
     final subtextColor = isDark ? Colors.white70 : Colors.black54;
@@ -171,21 +177,7 @@ class _ProfileState extends State<Profile> {
         backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        leading: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(100),
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              margin: EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.2),
-              ),
-              child: Icon(Icons.arrow_back, color: Colors.white),
-            ),
-          ),
-        ),
+        leading: AppBackButton(),
         title: Text(
           'Your Profile',
           style: GoogleFonts.poppins(
@@ -215,7 +207,6 @@ class _ProfileState extends State<Profile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -243,23 +234,25 @@ class _ProfileState extends State<Profile> {
                             color: Colors.grey[300],
                             image: _profileImage != null
                                 ? DecorationImage(
-                              image: FileImage(_profileImage!),
-                              fit: BoxFit.cover,
-                            )
-                                : (_profileImagePath != null && File(_profileImagePath!).existsSync()
-                                ? DecorationImage(
-                              image: FileImage(File(_profileImagePath!)),
-                              fit: BoxFit.cover,
-                            )
-                                : const DecorationImage(
-                              image: AssetImage("assets/images/default_avatar.png"),
-                              fit: BoxFit.cover,
-                            )),
+                                    image: FileImage(_profileImage!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : (_profileImagePath != null &&
+                                        File(_profileImagePath!).existsSync()
+                                    ? DecorationImage(
+                                        image:
+                                            FileImage(File(_profileImagePath!)),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : const DecorationImage(
+                                        image: AssetImage(
+                                            "assets/images/default_avatar.png"),
+                                        fit: BoxFit.cover,
+                                      )),
                           ),
                         ),
                       ),
                       // Edit Button
-
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -308,7 +301,7 @@ class _ProfileState extends State<Profile> {
               Icons.notifications_outlined,
               "Notifications",
               "Manage your notifications",
-                  () => _navigateTo(NotificationsScreen()),
+              () => _navigateTo(NotificationsScreen()),
               primaryColor,
               cardColor,
               textColor,
@@ -321,7 +314,7 @@ class _ProfileState extends State<Profile> {
               Icons.shopping_bag_outlined,
               "Purchases",
               "View your order history",
-                  () => _navigateTo(PurchaseScreen()),
+              () => _navigateTo(PurchaseScreen()),
               primaryColor,
               cardColor,
               textColor,
@@ -334,7 +327,7 @@ class _ProfileState extends State<Profile> {
               Icons.settings_outlined,
               "Settings",
               "App preferences and account settings",
-                  () => _navigateTo(SettingsScreen()),
+              () => _navigateTo(SettingsScreen()),
               primaryColor,
               cardColor,
               textColor,
@@ -347,7 +340,7 @@ class _ProfileState extends State<Profile> {
               Icons.logout,
               "Logout",
               "Sign out from your account",
-                  () => _showLogoutDialog(),
+              () => _showLogoutDialog(),
               Colors.red.shade400,
               cardColor,
               textColor,
@@ -364,18 +357,17 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildAnimatedProfileOption(
-      BuildContext context,
-      IconData icon,
-      String title,
-      String subtitle,
-      VoidCallback onTap,
-      Color iconColor,
-      Color cardColor,
-      Color textColor,
-      Color subtextColor,
-      int index,
-      ) {
-
+    BuildContext context,
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+    Color iconColor,
+    Color cardColor,
+    Color textColor,
+    Color subtextColor,
+    int index,
+  ) {
     return TweenAnimationBuilder(
       tween: Tween<double>(begin: 0, end: 1),
       duration: Duration(milliseconds: 400 + (index * 100)),

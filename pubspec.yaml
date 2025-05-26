@@ -55,6 +55,8 @@ dependencies:
   flutter_animate: ^4.2.0
   flutter_typeahead: ^4.1.0
   flutter_keyboard_visibility: ^5.4.1
+  dotted_border: ^2.1.0
+  font_awesome_flutter: ^10.8.0
 
 
 
@@ -79,6 +81,8 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/prescriptionsample.png
+    
 
   fonts:
     - family: Poppins

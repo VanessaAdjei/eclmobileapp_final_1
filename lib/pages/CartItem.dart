@@ -1,22 +1,24 @@
+// pages/CartItem.dart
 class CartItem {
   final String id;
   final String name;
   final double price;
-  final double? originalPrice;  // Added for sale price tracking
+  final double? originalPrice; // Added for sale price tracking
   int quantity;
   final String image;
   final DateTime? purchaseDate;
-  DateTime? lastModified;  // Changed to nullable
+  DateTime? lastModified; // Changed to nullable
 
   CartItem({
     required this.id,
     required this.name,
     required this.price,
-    this.originalPrice,  // Added optional original price
+    this.originalPrice, // Added optional original price
     this.quantity = 1,
     required this.image,
     this.purchaseDate,
-    DateTime? modifiedDate,  // Renamed parameter to avoid initialization conflict
+    DateTime?
+        modifiedDate, // Renamed parameter to avoid initialization conflict
   }) {
     // Initialize lastModified in the constructor body instead
     lastModified = modifiedDate ?? DateTime.now();
@@ -40,8 +42,10 @@ class CartItem {
         'quantity': quantity,
         'image': image,
         // Handle potential null lastModified
-        if (lastModified != null) 'lastModified': lastModified!.toIso8601String(),
-        if (purchaseDate != null) 'purchaseDate': purchaseDate!.toIso8601String(),
+        if (lastModified != null)
+          'lastModified': lastModified!.toIso8601String(),
+        if (purchaseDate != null)
+          'purchaseDate': purchaseDate!.toIso8601String(),
       };
     } catch (e) {
       // Fallback if any serialization fails
@@ -144,7 +148,8 @@ class CartItem {
       originalPrice: itemOriginalPrice,
       quantity: itemQuantity,
       image: itemImage,
-      modifiedDate: itemLastModified, // Changed from lastModified to modifiedDate
+      modifiedDate:
+          itemLastModified, // Changed from lastModified to modifiedDate
       purchaseDate: itemPurchaseDate,
     );
   }
@@ -160,6 +165,29 @@ class CartItem {
 
   // Add a clone method to create a copy with potentially different values
   CartItem clone({
+    String? id,
+    String? name,
+    double? price,
+    double? originalPrice,
+    int? quantity,
+    String? image,
+    DateTime? modifiedDate,
+    DateTime? purchaseDate,
+  }) {
+    return CartItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      originalPrice: originalPrice ?? this.originalPrice,
+      quantity: quantity ?? this.quantity,
+      image: image ?? this.image,
+      modifiedDate: modifiedDate ?? lastModified,
+      purchaseDate: purchaseDate ?? this.purchaseDate,
+    );
+  }
+
+  // Add a copyWith method for updating fields
+  CartItem copyWith({
     String? id,
     String? name,
     double? price,

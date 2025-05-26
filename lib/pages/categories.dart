@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shimmer/shimmer.dart';
-import 'Cart.dart';
 import 'bottomnav.dart';
 import 'homepage.dart';
 import 'itemdetail.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'AppBackButton.dart';
 
 class CategoryPage extends StatefulWidget {
   const CategoryPage({super.key});
@@ -94,27 +94,8 @@ class _CategoryPageState extends State<CategoryPage> {
         backgroundColor: Colors.green.shade700,
         elevation: 0,
         centerTitle: true,
-        leading: Container(
-          margin: EdgeInsets.all(8.0),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.green[600],
-          ),
-          child: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                  (route) => false,
-                );
-              }
-            },
-          ),
-        ),
+        leading:
+            AppBackButton(backgroundColor: Colors.green[600] ?? Colors.green),
         title: Text(
           'Categories',
           style: TextStyle(
@@ -678,11 +659,13 @@ class SubcategoryPageState extends State<SubcategoryPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              IconButton(
-                icon: Icon(Icons.arrow_back_ios_new,
-                    color: Colors.white, size: 24),
-                onPressed: () => Navigator.pop(context),
-                splashRadius: 22,
+              AppBackButton(
+                backgroundColor: Colors.green[700] ?? Colors.green,
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
+                },
               ),
               SizedBox(width: 4),
               Expanded(
@@ -1639,10 +1622,8 @@ class _ProductListPageState extends State<ProductListPage> {
             fontSize: 20,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading:
+            AppBackButton(backgroundColor: Colors.green[700] ?? Colors.green),
         actions: [
           IconButton(
             icon: Icon(Icons.search, color: Colors.white),
@@ -1887,121 +1868,6 @@ class _ProductListPageState extends State<ProductListPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSortDropdown() {
-    return PopupMenuButton<String>(
-      onSelected: (value) {
-        sortProducts(value);
-      },
-      offset: Offset(0, 40),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'Latest',
-          child: Row(
-            children: [
-              Icon(Icons.access_time,
-                  size: 18,
-                  color: sortOption == 'Latest'
-                      ? Colors.green.shade700
-                      : Colors.grey.shade800),
-              SizedBox(width: 12),
-              Text(
-                'Latest',
-                style: TextStyle(
-                  color: sortOption == 'Latest'
-                      ? Colors.green.shade700
-                      : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Latest'
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'Price: Low to High',
-          child: Row(
-            children: [
-              Icon(Icons.arrow_upward,
-                  size: 18,
-                  color: sortOption == 'Price: Low to High'
-                      ? Colors.green.shade700
-                      : Colors.grey.shade800),
-              SizedBox(width: 12),
-              Text(
-                'Price: Low to High',
-                style: TextStyle(
-                  color: sortOption == 'Price: Low to High'
-                      ? Colors.green.shade700
-                      : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Price: Low to High'
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'Price: High to Low',
-          child: Row(
-            children: [
-              Icon(Icons.arrow_downward,
-                  size: 18,
-                  color: sortOption == 'Price: High to Low'
-                      ? Colors.green.shade700
-                      : Colors.grey.shade800),
-              SizedBox(width: 12),
-              Text(
-                'Price: High to Low',
-                style: TextStyle(
-                  color: sortOption == 'Price: High to Low'
-                      ? Colors.green.shade700
-                      : Colors.grey.shade800,
-                  fontWeight: sortOption == 'Price: High to Low'
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.sort, size: 16, color: Colors.grey.shade800),
-            SizedBox(width: 3),
-            Text(
-              'Sort',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey.shade800,
-              ),
-            ),
-            SizedBox(width: 4),
-            Icon(Icons.arrow_drop_down, size: 20, color: Colors.grey.shade800),
-          ],
-        ),
       ),
     );
   }

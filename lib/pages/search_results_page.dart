@@ -9,10 +9,10 @@ class SearchResultsPage extends StatelessWidget {
   final List<Product> products;
 
   const SearchResultsPage({
-    Key? key,
+    super.key,
     required this.query,
     required this.products,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
