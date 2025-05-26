@@ -119,22 +119,27 @@ class AuthService {
       String name, String email, String password, String phoneNumber) async {
     final url = Uri.parse('$baseUrl/register');
 
+    final payload = {
+      "name": name,
+      "email": email,
+      "password": password,
+      "phone": phoneNumber,
+    };
+    print('SignUp request payload: ' + payload.toString());
+
     try {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "name": name,
-          "email": email,
-          "password": hashPassword(password),
-          "phone": phoneNumber,
-        }),
+        body: jsonEncode(payload),
       );
+      print('SignUp response status: ' + response.statusCode.toString());
+      print('SignUp response body: ' + response.body);
 
       if (response.statusCode == 201) {
         return true;
       } else {
-        print("Signup failed: ${response.body}");
+        print("Signup failed: " + response.body);
         return false;
       }
     } catch (error) {
@@ -189,14 +194,18 @@ class AuthService {
   static Future<Map<String, dynamic>> signIn(
       String email, String password) async {
     try {
+      final payload = {
+        'email': email,
+        'password': password,
+      };
+      print('SignIn request payload: ' + payload.toString());
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': hashPassword(password),
-        }),
+        body: jsonEncode(payload),
       );
+      print('SignIn response status: ' + response.statusCode.toString());
+      print('SignIn response body: ' + response.body);
 
       final responseData = json.decode(response.body);
 
@@ -341,6 +350,10 @@ class AuthService {
       if (user['phone'] != null) {
         await secureStorage.write(
             key: userPhoneNumberKey, value: user['phone']);
+      }
+      if (user['hashed_link'] != null) {
+        await secureStorage.write(
+            key: 'hashed_link', value: user['hashed_link']);
       }
       debugPrint("User data saved successfully");
     } catch (e) {
@@ -774,6 +787,48 @@ class AuthService {
       }),
     );
     return jsonDecode(response.body);
+  }
+
+  static Future<String?> getHashedLink() async {
+    return await secureStorage.read(key: 'hashed_link');
+  }
+
+  static Future<Map<String, dynamic>> getOrders() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/orders'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      debugPrint('Orders API response status: ${response.statusCode}');
+      debugPrint('Orders API response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'orders': data['orders'] ?? data['data'] ?? [],
+        };
+      }
+      return {
+        'success': false,
+        'message': 'Failed to fetch orders: ${response.statusCode}',
+      };
+    } catch (e) {
+      debugPrint('Error fetching orders: $e');
+      return {
+        'success': false,
+        'message': 'Exception: $e',
+      };
+    }
   }
 }
 

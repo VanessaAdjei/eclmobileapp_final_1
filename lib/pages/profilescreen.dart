@@ -14,6 +14,7 @@ import 'auth_service.dart';
 import 'bottomnav.dart';
 import 'loggedout.dart';
 import 'homepage.dart';
+import 'AppBackButton.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -118,8 +119,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               onPressed: () async {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                await prefs.clear();
+                await AuthService.logout();
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => LoggedOutScreen()),
@@ -277,6 +277,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           elevation: 0,
           centerTitle: true,
           titleSpacing: 0,
+          leading: AppBackButton(
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              }
+            },
+          ),
           title: const Text(
             'My Profile',
             style: TextStyle(

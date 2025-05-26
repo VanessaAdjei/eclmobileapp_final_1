@@ -1,3 +1,4 @@
+// main.dart
 import 'package:eclapp/pages/auth_service.dart';
 import 'package:eclapp/pages/categories.dart';
 import 'package:eclapp/pages/signinpage.dart';
@@ -66,13 +67,131 @@ class _MyAppState extends State<MyApp> {
         themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
         theme: ThemeData(
           fontFamily: 'Poppins',
-          primarySwatch: Colors.green,
           brightness: Brightness.light,
+          primaryColor: Colors.green.shade700,
+          secondaryHeaderColor: Colors.green.shade400,
+          scaffoldBackgroundColor: Color(0xFFF8F9FA),
+          cardColor: Colors.white,
+          appBarTheme: AppBarTheme(
+            backgroundColor: Colors.green.shade700,
+            elevation: 2,
+            centerTitle: true,
+            iconTheme: IconThemeData(color: Colors.white),
+            titleTextStyle: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.green),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.green, width: 2),
+            ),
+            labelStyle:
+                TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
+            hintStyle: TextStyle(color: Colors.grey, fontSize: 15),
+            contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+              elevation: 2,
+            ),
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.green.shade700,
+              textStyle: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          colorScheme: ColorScheme.fromSwatch(
+            primarySwatch: Colors.green,
+            brightness: Brightness.light,
+          ).copyWith(background: Color(0xFFF8F9FA)),
         ),
         darkTheme: ThemeData(
           fontFamily: 'Poppins',
-          primarySwatch: Colors.green,
           brightness: Brightness.dark,
+          primaryColor: Colors.green.shade400,
+          secondaryHeaderColor: Colors.green.shade200,
+          scaffoldBackgroundColor: Colors.grey.shade900,
+          cardColor: Colors.grey.shade800,
+          appBarTheme: AppBarTheme(
+            backgroundColor: Colors.green.shade400,
+            elevation: 2,
+            centerTitle: true,
+            iconTheme: IconThemeData(color: Colors.white),
+            titleTextStyle: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Colors.grey.shade800,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.green.shade400),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.green.shade400, width: 2),
+            ),
+            labelStyle: TextStyle(
+                color: Colors.green.shade200, fontWeight: FontWeight.w500),
+            hintStyle: TextStyle(color: Colors.grey, fontSize: 15),
+            contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+              elevation: 2,
+            ),
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.green.shade200,
+              textStyle: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          colorScheme: ColorScheme.fromSwatch(
+            primarySwatch: Colors.green,
+            brightness: Brightness.dark,
+          ).copyWith(background: Colors.grey.shade900),
         ),
         initialRoute: '/splashscreen',
         routes: {
@@ -80,7 +199,7 @@ class _MyAppState extends State<MyApp> {
           '/': (context) => HomePage(),
           '/cart': (context) => ProtectedRoute(child: const Cart()),
           '/categories': (context) => CategoryPage(),
-          '/profile': (context) =>  Profile(),
+          '/profile': (context) => Profile(),
           '/aboutus': (context) => AboutUsScreen(),
           '/signin': (context) => SignInScreen(),
           '/privacypolicy': (context) => PrivacyPolicyScreen(),
@@ -91,8 +210,6 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
-
-
 
 class ProtectedRoute extends StatelessWidget {
   final Widget child;
@@ -105,7 +222,8 @@ class ProtectedRoute extends StatelessWidget {
       future: AuthService.isLoggedIn(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
         }
 
         if (!snapshot.hasData || !snapshot.data!) {
@@ -139,7 +257,9 @@ class UserProvider with ChangeNotifier {
     _currentUser = null;
     notifyListeners();
   }
-}class AuthState extends InheritedWidget {
+}
+
+class AuthState extends InheritedWidget {
   static AuthState? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<AuthState>();
   }

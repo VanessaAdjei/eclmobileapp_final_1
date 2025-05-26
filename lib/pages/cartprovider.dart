@@ -4,6 +4,7 @@ import 'CartItem.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
+import 'package:http/http.dart' as http;
 
 class CartProvider with ChangeNotifier {
   // Map to store carts for different users
@@ -94,18 +95,13 @@ class CartProvider with ChangeNotifier {
   }
 
   void addToCart(CartItem item) async {
-    // Check if user is logged in
-    bool isLoggedIn = await AuthService.isLoggedIn();
-    if (!isLoggedIn) {
-      // Handle not logged in case - maybe show a login prompt
+    if (!await AuthService.isLoggedIn()) {
       debugPrint('User must be logged in to add items to cart');
       return;
     }
 
-    // Ensure we have current user ID
-    _currentUserId ??= (await AuthService.getCurrentUserID());
+    _currentUserId ??= await AuthService.getCurrentUserID();
 
-    // Find if item already exists in cart
     int index =
         _cartItems.indexWhere((existingItem) => existingItem.id == item.id);
     if (index != -1) {
@@ -116,11 +112,66 @@ class CartProvider with ChangeNotifier {
     }
 
     await _saveUserCarts();
-    final cartStatus = await AuthService.checkAuthWithCart();
-    print('Cart status after add:');
-    print(cartStatus);
-    await _pushCartToServer();
     notifyListeners();
+
+    final hashedLink = await AuthService.getHashedLink();
+    final token = await AuthService.getToken();
+    if (hashedLink == null) {
+      debugPrint(
+          'No hashed_link found for user. Cannot add to cart on server.');
+      return;
+    }
+
+    final url =
+        'https://eclcommerce.ernestchemists.com.gh/api/check-out/$hashedLink';
+    final headers = {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+    final payload = {
+      'product_id': item.id,
+      'quantity': item.quantity,
+      'price': item.price,
+      'name': item.name,
+      'image': item.image,
+    };
+
+    debugPrint('POST $url');
+    debugPrint('Headers: $headers');
+    debugPrint('Body: ${jsonEncode(payload)}');
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(payload),
+      );
+      debugPrint('Add to cart API response status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == 'success' &&
+            responseData['items'] != null) {
+          final serverItems = (responseData['items'] as List)
+              .map((item) => CartItem(
+                    id: item['product_id']?.toString() ??
+                        item['id']?.toString() ??
+                        '',
+                    name: item['product_name'] ?? item['name'] ?? '',
+                    price: (item['price'] is int || item['price'] is double)
+                        ? item['price'].toDouble()
+                        : double.tryParse(item['price'].toString()) ?? 0.0,
+                    image: item['product_img'] ?? item['image'] ?? '',
+                    quantity: item['qty'] ?? item['quantity'] ?? 1,
+                  ))
+              .toList();
+          _cartItems = serverItems;
+          await _saveUserCarts();
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Add to cart error: $e');
+    }
   }
 
   void purchaseItems() async {
@@ -138,10 +189,59 @@ class CartProvider with ChangeNotifier {
   void removeFromCart(int index) async {
     if (_currentUserId == null) return;
 
+    final removedItem = _cartItems[index];
     _cartItems.removeAt(index);
     await _saveUserCarts();
-    await _pushCartToServer();
     notifyListeners();
+
+    // Get hashed link for API endpoint
+    final hashedLink = await AuthService.getHashedLink();
+    final token = await AuthService.getToken();
+    if (hashedLink == null) {
+      debugPrint(
+          'No hashed_link found for user. Cannot remove from cart on server.');
+      return;
+    }
+
+    final url = Uri.parse(
+            'https://eclcommerce.ernestchemists.com.gh/api/check-out/$hashedLink')
+        .replace(queryParameters: {'product_id': removedItem.id});
+    final headers = {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+    try {
+      final response = await http.delete(
+        url,
+        headers: headers,
+      );
+      debugPrint(
+          'Remove from cart API response status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        try {
+          final responseData = jsonDecode(response.body);
+          if (responseData['status'] == 'success' &&
+              responseData['items'] != null) {
+            final serverItems = (responseData['items'] as List)
+                .map((item) => CartItem(
+                      id: item['product_id']?.toString() ??
+                          item['id']?.toString() ??
+                          '',
+                      name: item['product_name'] ?? item['name'] ?? '',
+                      price: (item['price'] is int || item['price'] is double)
+                          ? item['price'].toDouble()
+                          : double.tryParse(item['price'].toString()) ?? 0.0,
+                      image: item['product_img'] ?? item['image'] ?? '',
+                      quantity: item['qty'] ?? item['quantity'] ?? 1,
+                    ))
+                .toList();
+            _cartItems = serverItems;
+            await _saveUserCarts();
+            notifyListeners();
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
   }
 
   void updateQuantity(int index, int newQuantity) async {

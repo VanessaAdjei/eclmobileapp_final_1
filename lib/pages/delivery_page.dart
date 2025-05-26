@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'bottomnav.dart';
 import 'cartprovider.dart';
 import 'AppBackButton.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class DeliveryPage extends StatefulWidget {
   const DeliveryPage({super.key});
@@ -204,58 +205,68 @@ class _DeliveryPageState extends State<DeliveryPage> {
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final theme = Theme.of(context);
 
     return Scaffold(
       body: Stack(
         children: [
           Column(
             children: [
-              // Custom header (copied from cart.dart)
-              Container(
-                padding: EdgeInsets.only(top: topPadding),
-                color: Colors.green.shade700,
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        AppBackButton(
-                          backgroundColor: Colors.green.shade700,
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Row(
-                              children: [
-                                _buildProgressStep("Cart",
-                                    isActive: false,
-                                    isCompleted: true,
-                                    step: 1),
-                                _buildProgressLine(isActive: false),
-                                _buildProgressStep("Delivery",
-                                    isActive: true,
-                                    isCompleted: false,
-                                    step: 2),
-                                _buildProgressLine(isActive: false),
-                                _buildProgressStep("Payment",
-                                    isActive: false,
-                                    isCompleted: false,
-                                    step: 3),
-                                _buildProgressLine(isActive: false),
-                                _buildProgressStep("Confirmation",
-                                    isActive: false,
-                                    isCompleted: false,
-                                    step: 4),
-                              ],
+              // Custom header (modernized)
+              Animate(
+                effects: [
+                  FadeEffect(duration: 400.ms),
+                  SlideEffect(
+                      duration: 400.ms,
+                      begin: Offset(0, 0.1),
+                      end: Offset(0, 0))
+                ],
+                child: Container(
+                  padding: EdgeInsets.only(top: topPadding),
+                  color: theme.appBarTheme.backgroundColor ??
+                      Colors.green.shade700,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          AppBackButton(
+                            backgroundColor: theme.primaryColor,
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Row(
+                                children: [
+                                  _buildProgressStep("Cart",
+                                      isActive: false,
+                                      isCompleted: true,
+                                      step: 1),
+                                  _buildProgressLine(isActive: false),
+                                  _buildProgressStep("Delivery",
+                                      isActive: true,
+                                      isCompleted: false,
+                                      step: 2),
+                                  _buildProgressLine(isActive: false),
+                                  _buildProgressStep("Payment",
+                                      isActive: false,
+                                      isCompleted: false,
+                                      step: 3),
+                                  _buildProgressLine(isActive: false),
+                                  _buildProgressStep("Confirmation",
+                                      isActive: false,
+                                      isCompleted: false,
+                                      step: 4),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 48),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Expanded(
@@ -267,25 +278,90 @@ class _DeliveryPageState extends State<DeliveryPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildDeliveryOptions(),
+                              Animate(
+                                effects: [
+                                  FadeEffect(duration: 400.ms),
+                                  SlideEffect(
+                                      duration: 400.ms,
+                                      begin: Offset(0, 0.1),
+                                      end: Offset(0, 0))
+                                ],
+                                child: _buildDeliveryOptions(),
+                              ),
                               const SizedBox(height: 16),
                               if (deliveryOption == 'Delivery')
-                                _buildMapSection(),
+                                Animate(
+                                  effects: [
+                                    FadeEffect(duration: 400.ms),
+                                    SlideEffect(
+                                        duration: 400.ms,
+                                        begin: Offset(0, 0.1),
+                                        end: Offset(0, 0))
+                                  ],
+                                  child: _buildMapSection(),
+                                ),
                               if (deliveryOption == 'Pickup')
-                                _buildPickupForm(),
-                              _buildContactInfo(),
+                                Animate(
+                                  effects: [
+                                    FadeEffect(duration: 400.ms),
+                                    SlideEffect(
+                                        duration: 400.ms,
+                                        begin: Offset(0, 0.1),
+                                        end: Offset(0, 0))
+                                  ],
+                                  child: _buildPickupForm(),
+                                ),
+                              Animate(
+                                effects: [
+                                  FadeEffect(duration: 400.ms),
+                                  SlideEffect(
+                                      duration: 400.ms,
+                                      begin: Offset(0, 0.1),
+                                      end: Offset(0, 0))
+                                ],
+                                child: _buildContactInfo(),
+                              ),
                               const SizedBox(height: 16),
-                              _buildDeliveryNotes(),
+                              Animate(
+                                effects: [
+                                  FadeEffect(duration: 400.ms),
+                                  SlideEffect(
+                                      duration: 400.ms,
+                                      begin: Offset(0, 0.1),
+                                      end: Offset(0, 0))
+                                ],
+                                child: _buildDeliveryNotes(),
+                              ),
                               const SizedBox(height: 20),
-                              _buildOrderSummary(cart),
+                              Animate(
+                                effects: [
+                                  FadeEffect(duration: 400.ms),
+                                  SlideEffect(
+                                      duration: 400.ms,
+                                      begin: Offset(0, 0.1),
+                                      end: Offset(0, 0))
+                                ],
+                                child: _buildOrderSummary(cart),
+                              ),
                               const SizedBox(height: 30),
-                              _buildContinueButton(),
+                              Animate(
+                                effects: [
+                                  FadeEffect(duration: 400.ms),
+                                  SlideEffect(
+                                      duration: 400.ms,
+                                      begin: Offset(0, 0.1),
+                                      end: Offset(0, 0))
+                                ],
+                                child: _buildContinueButton(),
+                              ),
                               const SizedBox(height: 20),
                             ],
                           ),
                         ),
                         if (isLoadingLocation)
-                          const Center(child: CircularProgressIndicator()),
+                          Center(
+                              child: CircularProgressIndicator(
+                                  color: theme.primaryColor)),
                       ],
                     );
                   },
@@ -894,7 +970,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
             ),
           ),
           Text(
-            '₵${value.toStringAsFixed(2)}',
+            'GHS ${value.toStringAsFixed(2)}',
             style: TextStyle(
               fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
               color: isHighlighted ? Colors.green : null,

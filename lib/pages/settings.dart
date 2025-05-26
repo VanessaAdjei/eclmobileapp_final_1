@@ -20,6 +20,8 @@ import 'loggedout.dart';
 import 'notifications.dart';
 import 'homepage.dart';
 import 'AppBackButton.dart';
+import 'auth_service.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -132,8 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               onPressed: () async {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                await prefs.clear();
+                await AuthService.logout();
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => LoggedOutScreen()),
@@ -170,14 +171,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        leading: AppBackButton(),
+        leading: AppBackButton(
+          backgroundColor: primaryColor,
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          },
+        ),
         title: Text(
           'Settings',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: Theme.of(context).appBarTheme.titleTextStyle ??
+              GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
         ),
         actions: [
           IconButton(
@@ -191,105 +205,110 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              color: primaryColor,
-              padding: const EdgeInsets.only(
-                  left: 20, right: 20, top: 10, bottom: 30),
-              child: Column(
-                children: [
-                  // Profile section
-                  Row(
-                    children: [
-                      Stack(
-                        children: [
-                          GestureDetector(
-                            onTap: _pickImage,
-                            child: Container(
-                              height: 80,
-                              width: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: Colors.white, width: 2),
-                                color: Colors.grey[300],
-                                image: _profileImage != null
-                                    ? DecorationImage(
-                                        image: FileImage(_profileImage!),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : (_profileImagePath != null &&
-                                            File(_profileImagePath!)
-                                                .existsSync()
-                                        ? DecorationImage(
-                                            image: FileImage(
-                                                File(_profileImagePath!)),
-                                            fit: BoxFit.cover,
-                                          )
-                                        : const DecorationImage(
-                                            image: AssetImage(
-                                                "assets/images/default_avatar.png"),
-                                            fit: BoxFit.cover,
-                                          )),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+            // Profile section
+            Animate(
+              effects: [
+                FadeEffect(duration: 400.ms),
+                SlideEffect(
+                    duration: 400.ms, begin: Offset(0, 0.1), end: Offset(0, 0))
+              ],
+              child: Container(
+                color: primaryColor,
+                padding: const EdgeInsets.only(
+                    left: 20, right: 20, top: 10, bottom: 30),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Stack(
                           children: [
-                            Text(
-                              _userName,
-                              style: GoogleFonts.poppins(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _userEmail,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.8),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => ProfileScreen()),
-                              ),
+                            GestureDetector(
+                              onTap: _pickImage,
                               child: Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
+                                height: 80,
+                                width: 80,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Text(
-                                  'Edit Profile',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                  ),
+                                  shape: BoxShape.circle,
+                                  border:
+                                      Border.all(color: Colors.white, width: 2),
+                                  color: Colors.grey[300],
+                                  image: _profileImage != null
+                                      ? DecorationImage(
+                                          image: FileImage(_profileImage!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : (_profileImagePath != null &&
+                                              File(_profileImagePath!)
+                                                  .existsSync()
+                                          ? DecorationImage(
+                                              image: FileImage(
+                                                  File(_profileImagePath!)),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : const DecorationImage(
+                                              image: AssetImage(
+                                                  "assets/images/default_avatar.png"),
+                                              fit: BoxFit.cover,
+                                            )),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _userName,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _userEmail,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => ProfileScreen()),
+                                ),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    'Edit Profile',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-
             const SizedBox(height: 16),
-
             // Account Settings Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -303,41 +322,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            _buildSettingsCard(
-              context,
-              [
-                _buildSettingOption(
-                  context,
-                  "Profile Information",
-                  Icons.person_outline,
-                  ProfileScreen(),
-                  textColor,
-                  primaryColor,
-                ),
-                const Divider(height: 1),
-                _buildSettingOption(
-                  context,
-                  "Change Password",
-                  Icons.lock_outline,
-                  ChangePasswordPage(),
-                  textColor,
-                  primaryColor,
-                ),
-                const Divider(height: 1),
-                // _buildSettingOption(
-                //   context,
-                //   "Payment Methods",
-                //   Icons.credit_card,
-                //   AddPaymentPage(),
-                //   textColor,
-                //   primaryColor,
-                // ),
+            Animate(
+              effects: [
+                FadeEffect(duration: 400.ms),
+                SlideEffect(
+                    duration: 400.ms, begin: Offset(0, 0.1), end: Offset(0, 0))
               ],
-              cardColor,
+              child: _buildSettingsCard(
+                context,
+                [
+                  _buildAnimatedSettingOption(
+                      context,
+                      "Profile Information",
+                      Icons.person_outline,
+                      ProfileScreen(),
+                      textColor,
+                      primaryColor,
+                      0),
+                  const Divider(height: 1),
+                  _buildAnimatedSettingOption(
+                      context,
+                      "Change Password",
+                      Icons.lock_outline,
+                      ChangePasswordPage(),
+                      textColor,
+                      primaryColor,
+                      1),
+                ],
+                cardColor,
+              ),
             ),
-
             const SizedBox(height: 16),
-
             // General Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -351,25 +366,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            _buildSettingsCard(
-              context,
-              [
-                _buildSettingOption(
-                  context,
-                  "Notifications",
-                  Icons.notifications_outlined,
-                  NotificationsScreen(),
-                  textColor,
-                  primaryColor,
-                ),
-                // const Divider(height: 1),
-                // _buildDarkModeToggle(themeProvider, textColor, primaryColor),
+            Animate(
+              effects: [
+                FadeEffect(duration: 400.ms),
+                SlideEffect(
+                    duration: 400.ms, begin: Offset(0, 0.1), end: Offset(0, 0))
               ],
-              cardColor,
+              child: _buildSettingsCard(
+                context,
+                [
+                  _buildAnimatedSettingOption(
+                      context,
+                      "Notifications",
+                      Icons.notifications_outlined,
+                      NotificationsScreen(),
+                      textColor,
+                      primaryColor,
+                      0),
+                ],
+                cardColor,
+              ),
             ),
-
             const SizedBox(height: 16),
-
             // More Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -383,66 +401,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            _buildSettingsCard(
-              context,
-              [
-                _buildSettingOption(
-                  context,
-                  "About Us",
-                  Icons.info_outline,
-                  AboutUsScreen(),
-                  textColor,
-                  primaryColor,
-                ),
-                const Divider(height: 1),
-                _buildSettingOption(
-                  context,
-                  "Privacy Policy",
-                  Icons.privacy_tip_outlined,
-                  PrivacyPolicyScreen(),
-                  textColor,
-                  primaryColor,
-                ),
-                const Divider(height: 1),
-                _buildSettingOption(
-                  context,
-                  "Terms and Conditions",
-                  Icons.description_outlined,
-                  TermsAndConditionsScreen(),
-                  textColor,
-                  primaryColor,
-                ),
+            Animate(
+              effects: [
+                FadeEffect(duration: 400.ms),
+                SlideEffect(
+                    duration: 400.ms, begin: Offset(0, 0.1), end: Offset(0, 0))
               ],
-              cardColor,
+              child: _buildSettingsCard(
+                context,
+                [
+                  _buildAnimatedSettingOption(
+                      context,
+                      "About Us",
+                      Icons.info_outline,
+                      AboutUsScreen(),
+                      textColor,
+                      primaryColor,
+                      0),
+                  const Divider(height: 1),
+                  _buildAnimatedSettingOption(
+                      context,
+                      "Privacy Policy",
+                      Icons.privacy_tip_outlined,
+                      PrivacyPolicyScreen(),
+                      textColor,
+                      primaryColor,
+                      1),
+                  const Divider(height: 1),
+                  _buildAnimatedSettingOption(
+                      context,
+                      "Terms and Conditions",
+                      Icons.description_outlined,
+                      TermsAndConditionsScreen(),
+                      textColor,
+                      primaryColor,
+                      2),
+                ],
+                cardColor,
+              ),
             ),
-
             const SizedBox(height: 24),
-
             // Logout Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ElevatedButton.icon(
-                onPressed: _showLogoutDialog,
-                icon: const Icon(Icons.logout),
-                label: Text(
-                  "Logout",
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+            Animate(
+              effects: [
+                FadeEffect(duration: 400.ms),
+                SlideEffect(
+                    duration: 400.ms, begin: Offset(0, 0.1), end: Offset(0, 0))
+              ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ElevatedButton.icon(
+                  onPressed: _showLogoutDialog,
+                  icon: const Icon(Icons.logout),
+                  label: Text(
+                    "Logout",
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade400,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade400,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
                   ),
-                  elevation: 2,
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
           ],
         ),
@@ -468,6 +497,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Column(
         children: children,
+      ),
+    );
+  }
+
+  Widget _buildAnimatedSettingOption(
+    BuildContext context,
+    String text,
+    IconData icon,
+    Widget destination,
+    Color textColor,
+    Color iconColor,
+    int index,
+  ) {
+    return TweenAnimationBuilder(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: Duration(milliseconds: 400 + (index * 100)),
+      builder: (context, double value, child) {
+        return Transform.translate(
+          offset: Offset(0, 30 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: _buildSettingOption(
+        context,
+        text,
+        icon,
+        destination,
+        textColor,
+        iconColor,
       ),
     );
   }
@@ -525,41 +586,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
-  // Widget _buildDarkModeToggle(ThemeProvider themeProvider, Color textColor, Color iconColor) {
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  //     child: Row(
-  //       children: [
-  //         Container(
-  //           padding: const EdgeInsets.all(8),
-  //           decoration: BoxDecoration(
-  //             color: iconColor.withOpacity(0.1),
-  //             borderRadius: BorderRadius.circular(10),
-  //           ),
-  //           child: Icon(
-  //             themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-  //             color: iconColor,
-  //             size: 22,
-  //           ),
-  //         ),
-  //         const SizedBox(width: 16),
-  //         // Expanded(
-  //         //   child: Text(
-  //         //     "Dark Mode",
-  //         //     style: GoogleFonts.poppins(
-  //         //       fontSize: 16,
-  //         //       color: textColor,
-  //         //     ),
-  //         //   ),
-  //         // ),
-  //         // Switch(
-  //         //   value: themeProvider.isDarkMode,
-  //         //   onChanged: (value) => themeProvider.toggleTheme(),
-  //         //   activeColor: iconColor,
-  //         // ),
-  //       ],
-  //     ),
-  //   );
-  // }
 }

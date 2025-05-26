@@ -210,7 +210,18 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
             style: TextStyle(
                 fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
           ),
-          leading: AppBackButton(),
+          leading: AppBackButton(
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              }
+            },
+          ),
           actions: [
             IconButton(
               icon: const Icon(Icons.shopping_cart,

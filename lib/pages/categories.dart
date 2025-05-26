@@ -91,26 +91,37 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green.shade700,
-        elevation: 0,
-        centerTitle: true,
-        leading:
-            AppBackButton(backgroundColor: Colors.green[600] ?? Colors.green),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        elevation: Theme.of(context).appBarTheme.elevation,
+        centerTitle: Theme.of(context).appBarTheme.centerTitle,
+        leading: AppBackButton(
+          backgroundColor: Theme.of(context).primaryColor,
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          },
+        ),
         title: Text(
           'Categories',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: Theme.of(context).appBarTheme.titleTextStyle,
         ),
         actions: [
-          Container(
-            margin: EdgeInsets.only(right: 16.0),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [],
-            ),
+          IconButton(
+            icon: Icon(Icons.shopping_cart, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HomePage(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -271,34 +282,47 @@ class _CategoryPageState extends State<CategoryPage> {
       itemCount: _filteredCategories.length,
       itemBuilder: (context, index) {
         final category = _filteredCategories[index];
-        return CategoryGridItem(
-          categoryName: category['name'],
-          subcategories: _subcategoriesMap[category['id']] ?? [],
-          hasSubcategories: category['has_subcategories'],
-          imageUrl: _getCategoryImageUrl(category['image_url']),
-          onTap: () {
-            if (category['has_subcategories']) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SubcategoryPage(
-                    categoryName: category['name'],
-                    categoryId: category['id'],
-                  ),
-                ),
-              );
-            } else {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProductListPage(
-                    categoryName: category['name'],
-                    categoryId: category['id'],
-                  ),
-                ),
-              );
-            }
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: Duration(milliseconds: 400 + index * 80),
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 30 * (1 - value)),
+                child: child,
+              ),
+            );
           },
+          child: CategoryGridItem(
+            categoryName: category['name'],
+            subcategories: _subcategoriesMap[category['id']] ?? [],
+            hasSubcategories: category['has_subcategories'],
+            imageUrl: _getCategoryImageUrl(category['image_url']),
+            onTap: () {
+              if (category['has_subcategories']) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SubcategoryPage(
+                      categoryName: category['name'],
+                      categoryId: category['id'],
+                    ),
+                  ),
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProductListPage(
+                      categoryName: category['name'],
+                      categoryId: category['id'],
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
         );
       },
     );
@@ -664,6 +688,11 @@ class SubcategoryPageState extends State<SubcategoryPage> {
                 onPressed: () {
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomePage()),
+                    );
                   }
                 },
               ),
@@ -1622,8 +1651,19 @@ class _ProductListPageState extends State<ProductListPage> {
             fontSize: 20,
           ),
         ),
-        leading:
-            AppBackButton(backgroundColor: Colors.green[700] ?? Colors.green),
+        leading: AppBackButton(
+          backgroundColor: Colors.green[700] ?? Colors.green,
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          },
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.search, color: Colors.white),

@@ -15,6 +15,9 @@ import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eclapp/pages/signinpage.dart';
 import 'AppBackButton.dart';
+import 'package:eclapp/pages/homepage.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:ui';
 
 class ItemPage extends StatefulWidget {
   final String urlName;
@@ -230,18 +233,31 @@ class _ItemPageState extends State<ItemPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green.shade700,
-        elevation: 0,
-        centerTitle: true,
-        leading: AppBackButton(),
+        backgroundColor:
+            theme.appBarTheme.backgroundColor ?? Colors.green.shade700,
+        elevation: theme.appBarTheme.elevation ?? 0,
+        centerTitle: theme.appBarTheme.centerTitle ?? true,
+        leading: AppBackButton(
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          },
+        ),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 8.0),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.green[700],
+              color: theme.appBarTheme.backgroundColor ?? Colors.green.shade700,
             ),
             child: IconButton(
               icon: const Icon(Icons.shopping_cart, color: Colors.white),
@@ -282,7 +298,7 @@ class _ItemPageState extends State<ItemPage> {
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade700,
+                      backgroundColor: theme.primaryColor,
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () {
@@ -312,116 +328,175 @@ class _ItemPageState extends State<ItemPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  height: 200,
-                  margin: const EdgeInsets.symmetric(vertical: 10),
-                  child: Center(
-                    child: product.thumbnail.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: product.thumbnail,
-                            fit: BoxFit.contain,
-                            placeholder: (context, url) => const Center(
-                                child: CircularProgressIndicator()),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.grey[200],
-                              child: const Center(
-                                child: Icon(Icons.medical_services, size: 80),
-                              ),
-                            ),
-                          )
-                        : Container(
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: Icon(Icons.medical_services, size: 80),
-                            ),
-                          ),
-                  ),
-                ),
-                // Product Info Card
-                Center(
-                  child: Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    margin:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+                // Product Image with Hero animation
+                Hero(
+                  tag: 'product-image-${product.id}',
+                  child: Animate(
+                    effects: [
+                      FadeEffect(duration: 400.ms),
+                      SlideEffect(
+                          duration: 400.ms,
+                          begin: Offset(0, 0.1),
+                          end: Offset(0, 0))
+                    ],
                     child: Container(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (product.category.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: Chip(
-                                label: Text(
-                                  product.category,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 11),
-                                ),
-                                backgroundColor: Colors.green.shade700,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 0),
-                              ),
-                            ),
-                          Text(
-                            product.name,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
+                      height: 220,
+                      margin: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
                           ),
-                          const SizedBox(height: 7),
-                          Text(
-                            'GHS ${price.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.green.shade800,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Divider(height: 12, thickness: 1),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Product Details',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          ProductDescription(description: product.description),
                         ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: product.thumbnail.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: product.thumbnail,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(
+                                    child: CircularProgressIndicator()),
+                                errorWidget: (context, url, error) => Container(
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child:
+                                        Icon(Icons.medical_services, size: 80),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: Icon(Icons.medical_services, size: 80),
+                                ),
+                              ),
                       ),
                     ),
                   ),
                 ),
-                Center(
-                  child: Material(
-                    elevation: 2,
-                    borderRadius: BorderRadius.circular(10),
+                // Glassmorphic Product Info Card
+                Animate(
+                  effects: [
+                    FadeEffect(duration: 400.ms, delay: 100.ms),
+                    SlideEffect(
+                        duration: 400.ms,
+                        begin: Offset(0, 0.1),
+                        end: Offset(0, 0),
+                        delay: 100.ms)
+                  ],
+                  child: Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 0),
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 0),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.green),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.10),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                  color: Colors.white.withOpacity(0.3)),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 18),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (product.category.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 6),
+                                    child: Chip(
+                                      label: Text(
+                                        product.category,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 11),
+                                      ),
+                                      backgroundColor: theme.primaryColor,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 0),
+                                    ),
+                                  ),
+                                Text(
+                                  product.name,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                      fontSize: 20),
+                                ),
+                                const SizedBox(height: 7),
+                                Text(
+                                  'GHS ${price.toStringAsFixed(2)}',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                      color: Colors.green.shade800,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18),
+                                ),
+                                const SizedBox(height: 10),
+                                ProductDescription(
+                                    description: product.description),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Floating Quantity Selector
+                Animate(
+                  effects: [
+                    FadeEffect(duration: 400.ms, delay: 200.ms),
+                    SlideEffect(
+                        duration: 400.ms,
+                        begin: Offset(0, 0.1),
+                        end: Offset(0, 0),
+                        delay: 200.ms)
+                  ],
+                  child: Material(
+                    elevation: 6,
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.transparent,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
                         color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                        border: Border.all(color: Colors.green.shade100),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
                             icon: const Icon(Icons.remove,
-                                color: Colors.black, size: 16),
+                                color: Colors.black, size: 18),
                             onPressed: () {
                               setState(() {
                                 if (quantity > 1) {
@@ -435,10 +510,12 @@ class _ItemPageState extends State<ItemPage> {
                           ),
                           Text(quantity.toString(),
                               style: const TextStyle(
-                                  color: Colors.black, fontSize: 16)),
+                                  color: Colors.black,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold)),
                           IconButton(
                             icon: const Icon(Icons.add,
-                                color: Colors.black, size: 16),
+                                color: Colors.black, size: 18),
                             onPressed: () {
                               setState(() {
                                 quantity++;
@@ -450,172 +527,223 @@ class _ItemPageState extends State<ItemPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Total: GHS ${totalPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade800,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 44,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.shopping_cart,
-                            size: 20, color: Colors.white),
-                        label: const Text(
-                          'Add to Cart',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: Colors.white,
+                // Add to Cart Button
+                Animate(
+                  effects: [
+                    FadeEffect(duration: 400.ms, delay: 300.ms),
+                    SlideEffect(
+                        duration: 400.ms,
+                        begin: Offset(0, 0.1),
+                        end: Offset(0, 0),
+                        delay: 300.ms)
+                  ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.green.shade600,
+                              Colors.green.shade800
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.shade200.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade700,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.shopping_cart,
+                              size: 22, color: Colors.white),
+                          label: Text(
+                            'Add to Cart  •  GHS ${totalPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.white),
                           ),
-                          elevation: 3,
-                          padding: const EdgeInsets.symmetric(horizontal: 18),
-                        ),
-                        onPressed: () async {
-                          if (!await AuthService.isLoggedIn()) {
-                            // Redirect to sign in page
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SignInScreen(
-                                  returnTo:
-                                      ModalRoute.of(context)?.settings.name,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 18),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            elevation: 0,
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                          ),
+                          onPressed: () async {
+                            if (!await AuthService.isLoggedIn()) {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SignInScreen(
+                                      returnTo: ModalRoute.of(context)
+                                          ?.settings
+                                          .name),
                                 ),
-                              ),
-                            );
-                            // Optionally, after sign in, check again and add to cart if logged in
-                            if (await AuthService.isLoggedIn()) {
+                              );
+                              if (await AuthService.isLoggedIn()) {
+                                _addToCart(context, product);
+                              }
+                            } else {
                               _addToCart(context, product);
                             }
-                          } else {
-                            _addToCart(context, product);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Related Products',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                          },
+                        ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 180,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: relatedProducts.length,
-                    itemBuilder: (context, index) {
-                      final relatedProduct = relatedProducts[index];
-                      return Container(
-                        width: 150,
-                        margin: const EdgeInsets.only(left: 10, right: 10),
-                        child: Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ItemPage(
-                                    urlName: relatedProduct.urlName,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(10)),
-                                    child: relatedProduct.thumbnail
-                                            .startsWith('http')
-                                        ? CachedNetworkImage(
-                                            imageUrl: relatedProduct.thumbnail,
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) =>
-                                                const Center(
-                                                    child:
-                                                        CircularProgressIndicator()),
-                                            errorWidget: (_, __, ___) =>
-                                                Container(
-                                              color: Colors.grey[200],
-                                              child: const Icon(
-                                                  Icons.image_not_supported),
-                                            ),
-                                          )
-                                        : Container(
-                                            color: Colors.grey[200],
-                                            child: const Icon(
-                                                Icons.medical_services),
-                                          ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        relatedProduct.name,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'GHS ${relatedProduct.price}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.green.shade700,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                const SizedBox(height: 24),
+                // Related Products Carousel
+                Animate(
+                  effects: [
+                    FadeEffect(duration: 400.ms, delay: 400.ms),
+                    SlideEffect(
+                        duration: 400.ms,
+                        begin: Offset(0, 0.1),
+                        end: Offset(0, 0),
+                        delay: 400.ms)
+                  ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Related Products',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
                             ),
                           ),
                         ),
-                      );
-                    },
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 200,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: relatedProducts.length,
+                          itemBuilder: (context, index) {
+                            final relatedProduct = relatedProducts[index];
+                            return Animate(
+                              effects: [
+                                FadeEffect(
+                                    duration: 400.ms, delay: (index * 100).ms),
+                                SlideEffect(
+                                    duration: 400.ms,
+                                    begin: Offset(0, 0.1),
+                                    end: Offset(0, 0),
+                                    delay: (index * 100).ms)
+                              ],
+                              child: Container(
+                                width: 160,
+                                margin:
+                                    const EdgeInsets.only(left: 10, right: 10),
+                                child: Card(
+                                  elevation: 3,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(16),
+                                    onTap: () {
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ItemPage(
+                                              urlName: relatedProduct.urlName),
+                                        ),
+                                      );
+                                    },
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Expanded(
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                const BorderRadius.vertical(
+                                                    top: Radius.circular(16)),
+                                            child: relatedProduct.thumbnail
+                                                    .startsWith('http')
+                                                ? CachedNetworkImage(
+                                                    imageUrl: relatedProduct
+                                                        .thumbnail,
+                                                    fit: BoxFit.cover,
+                                                    placeholder: (context,
+                                                            url) =>
+                                                        const Center(
+                                                            child:
+                                                                CircularProgressIndicator()),
+                                                    errorWidget: (_, __, ___) =>
+                                                        Container(
+                                                      color: Colors.grey[200],
+                                                      child: const Icon(Icons
+                                                          .image_not_supported),
+                                                    ),
+                                                  )
+                                                : Container(
+                                                    color: Colors.grey[200],
+                                                    child: const Icon(
+                                                        Icons.medical_services),
+                                                  ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                relatedProduct.name,
+                                                style: const TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'GHS ${relatedProduct.price}',
+                                                style: TextStyle(
+                                                    fontSize: 13,
+                                                    color:
+                                                        Colors.green.shade700,
+                                                    fontWeight:
+                                                        FontWeight.w600),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
               ],
             ),
           );

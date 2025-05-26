@@ -11,6 +11,7 @@ import 'bottomnav.dart';
 import 'cartprovider.dart';
 import 'homepage.dart';
 import 'AppBackButton.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class PaymentPage extends StatefulWidget {
   const PaymentPage({super.key});
@@ -251,7 +252,6 @@ class _PaymentPageState extends State<PaymentPage> {
     }
   }
 
-  //   // Clear any previous errors
   //   setState(() {
   //     _paymentError = null;
   //     _isProcessingPayment = true;
@@ -342,92 +342,164 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final theme = Theme.of(context);
 
     return Scaffold(
       body: Stack(
         children: [
           Column(
             children: [
-              Container(
-                padding: EdgeInsets.only(top: topPadding),
-                color: Colors.green.shade700,
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        AppBackButton(
-                          backgroundColor: Colors.green.shade700,
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Row(
-                              children: [
-                                _buildProgressStep("Cart",
-                                    isActive: false,
-                                    isCompleted: true,
-                                    step: 1),
-                                _buildProgressLine(isActive: false),
-                                _buildProgressStep("Delivery",
-                                    isActive: false,
-                                    isCompleted: true,
-                                    step: 2),
-                                _buildProgressLine(isActive: false),
-                                _buildProgressStep("Payment",
-                                    isActive: true,
-                                    isCompleted: false,
-                                    step: 3),
-                                _buildProgressLine(isActive: false),
-                                _buildProgressStep("Confirmation",
-                                    isActive: false,
-                                    isCompleted: false,
-                                    step: 4),
-                              ],
+              // Custom header (modernized)
+              Animate(
+                effects: [
+                  FadeEffect(duration: 400.ms),
+                  SlideEffect(
+                      duration: 400.ms,
+                      begin: Offset(0, 0.1),
+                      end: Offset(0, 0))
+                ],
+                child: Container(
+                  padding: EdgeInsets.only(top: topPadding),
+                  color: theme.appBarTheme.backgroundColor ??
+                      Colors.green.shade700,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          AppBackButton(
+                            backgroundColor: theme.primaryColor,
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Row(
+                                children: [
+                                  _buildProgressStep("Cart",
+                                      isActive: false,
+                                      isCompleted: true,
+                                      step: 1),
+                                  _buildProgressLine(isActive: false),
+                                  _buildProgressStep("Delivery",
+                                      isActive: false,
+                                      isCompleted: true,
+                                      step: 2),
+                                  _buildProgressLine(isActive: false),
+                                  _buildProgressStep("Payment",
+                                      isActive: true,
+                                      isCompleted: false,
+                                      step: 3),
+                                  _buildProgressLine(isActive: false),
+                                  _buildProgressStep("Confirmation",
+                                      isActive: false,
+                                      isCompleted: false,
+                                      step: 4),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Expanded(
                 child: Consumer<CartProvider>(
                   builder: (context, cart, child) {
                     return SingleChildScrollView(
-                      padding: const EdgeInsets.all(5),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildPaymentMethods(),
+                          Animate(
+                            effects: [
+                              FadeEffect(duration: 400.ms),
+                              SlideEffect(
+                                  duration: 400.ms,
+                                  begin: Offset(0, 0.1),
+                                  end: Offset(0, 0))
+                            ],
+                            child: _buildPaymentMethods(),
+                          ),
                           const SizedBox(height: 20),
-                          if (_paymentError != null) _buildErrorBanner(),
+                          Animate(
+                            effects: [
+                              FadeEffect(duration: 400.ms),
+                              SlideEffect(
+                                  duration: 400.ms,
+                                  begin: Offset(0, 0.1),
+                                  end: Offset(0, 0))
+                            ],
+                            child: _buildOrderSummary(cart),
+                          ),
                           const SizedBox(height: 20),
-                          _buildOrderSummary(cart),
-                          const SizedBox(height: 30),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
+                          Animate(
+                            effects: [
+                              FadeEffect(duration: 400.ms),
+                              SlideEffect(
+                                  duration: 400.ms,
+                                  begin: Offset(0, 0.1),
+                                  end: Offset(0, 0))
+                            ],
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(context).primaryColor,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  disabledBackgroundColor:
+                                      Colors.green.withOpacity(0.5),
+                                  disabledForegroundColor:
+                                      Colors.white.withOpacity(0.7),
+                                ),
+                                onPressed: _isProcessingPayment
+                                    ? null
+                                    : () => processPayment(cart),
+                                child: _isProcessingPayment
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'CONTINUE TO PAYMENT',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16),
+                                      ),
                               ),
-                              onPressed: _isProcessingPayment
-                                  ? null
-                                  : () => processPayment(cart),
-                              child: _isProcessingPayment
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white)
-                                  : const Text(
-                                      'CONTINUE TO PAYMENT',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
                             ),
-                          )
+                          ),
+                          if (_paymentError != null)
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Animate(
+                                effects: [
+                                  FadeEffect(duration: 400.ms),
+                                  SlideEffect(
+                                      duration: 400.ms,
+                                      begin: Offset(0, 0.1),
+                                      end: Offset(0, 0))
+                                ],
+                                child: Text(
+                                  _paymentError!,
+                                  style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     );
@@ -436,6 +508,13 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
             ],
           ),
+          if (_isProcessingPayment)
+            Container(
+              color: Colors.black.withOpacity(0.2),
+              child: Center(
+                child: CircularProgressIndicator(color: theme.primaryColor),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: const CustomBottomNav(),
@@ -530,10 +609,6 @@ class _PaymentPageState extends State<PaymentPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'PAYMENT METHOD',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
         const SizedBox(height: 12),
         ...paymentMethods.map((method) {
           return Card(
@@ -620,7 +695,7 @@ class _PaymentPageState extends State<PaymentPage> {
             ),
           ),
           Text(
-            'GH₵${value.toStringAsFixed(2)}',
+            'GHS ${value.toStringAsFixed(2)}',
             style: TextStyle(
               fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
               color: isHighlighted ? Colors.green : null,

@@ -347,15 +347,36 @@ class _CartState extends State<Cart> {
       ),
       child: Row(
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              image: DecorationImage(
-                image: NetworkImage(getImageUrl(item.image)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Container(
+              width: 80,
+              height: 80,
+              margin: const EdgeInsets.all(8),
+              child: CachedNetworkImage(
+                imageUrl: getImageUrl(item.image),
                 fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                      ),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.error_outline, color: Colors.red),
+                ),
+                memCacheWidth: 160, // 2x display size for high DPI screens
+                memCacheHeight: 160,
+                maxWidthDiskCache: 320, // Larger size for disk cache
+                maxHeightDiskCache: 320,
               ),
             ),
           ),

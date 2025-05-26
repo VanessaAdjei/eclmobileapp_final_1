@@ -21,6 +21,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'search_results_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'cart.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -182,7 +184,9 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.call_end_rounded, color: Colors.green),
+                leading:
+                    FaIcon(FontAwesomeIcons.whatsapp, color: Color(0xFF25D366)),
+                title: Text('WhatsApp'),
                 onTap: () {
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
@@ -443,7 +447,7 @@ class _HomePageState extends State<HomePage> {
         ),
         hideOnEmpty: true,
         hideOnLoading: false,
-        debounceDuration: Duration(milliseconds: 100),
+        debounceDuration: Duration(milliseconds: 10),
         suggestionsBoxDecoration: SuggestionsBoxDecoration(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -631,14 +635,13 @@ class _HomePageState extends State<HomePage> {
       height: cardHeight,
       margin: EdgeInsets.all(screenWidth * 0.019),
       decoration: BoxDecoration(
-        color: Colors.white30,
-        borderRadius: BorderRadius.circular(1),
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: Offset(0, 1),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: Offset(0, 5),
           ),
         ],
       ),
@@ -738,224 +741,52 @@ class _HomePageState extends State<HomePage> {
             controller: _scrollController,
             slivers: [
               SliverAppBar(
-                expandedHeight: 50.0,
+                expandedHeight: 56.0,
                 floating: false,
                 automaticallyImplyLeading: false,
                 pinned: true,
-                backgroundColor: Colors.green.shade700,
+                backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
                 flexibleSpace: LayoutBuilder(
                   builder: (context, constraints) {
                     return FlexibleSpaceBar(
                       centerTitle: false,
                       titlePadding: EdgeInsets.only(left: 16, bottom: 10),
-                      title: _isScrolled
-                          ? SizedBox(
-                              height: 40,
-                              child: TypeAheadField<Product>(
-                                textFieldConfiguration: TextFieldConfiguration(
-                                  controller: _searchController,
-                                  decoration: InputDecoration(
-                                    hintText: 'Search products...',
-                                    hintStyle: TextStyle(
-                                        color: Colors.black.withOpacity(0.6)),
-                                    prefixIcon:
-                                        Icon(Icons.search, color: Colors.black),
-                                    filled: true,
-                                    fillColor: Colors.white30,
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: 0),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(30),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                  ),
-                                  onSubmitted: (value) {
-                                    if (value.trim().isNotEmpty) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              SearchResultsPage(
-                                            query: value.trim(),
-                                            products: products,
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                ),
-                                suggestionsCallback: (pattern) async {
-                                  print('Searching for: ' + pattern);
-                                  if (pattern.isEmpty) return [];
-                                  if (pattern.length < 2) return [];
-                                  try {
-                                    final response = await http.get(
-                                      Uri.parse(
-                                          'https://eclcommerce.ernestchemists.com.gh/api/search/' +
-                                              Uri.encodeComponent(pattern)),
-                                    );
-                                    print(
-                                        'Status code: \\${response.statusCode}');
-                                    print('Response body: \\${response.body}');
-                                    if (response.statusCode == 200) {
-                                      final data = json.decode(response.body);
-                                      // Adjust this parsing based on the actual API response structure
-                                      final List productsData =
-                                          data['data'] ?? [];
-                                      final products =
-                                          productsData.map<Product>((item) {
-                                        return Product(
-                                          id: item['id'] ?? 0,
-                                          name: item['name'] ?? 'No name',
-                                          description:
-                                              item['tag_description'] ?? '',
-                                          urlName: item['url_name'] ?? '',
-                                          status: item['status'] ?? '',
-                                          batch_no: item['batch_no'] ?? '',
-                                          price:
-                                              (item['price'] ?? 0).toString(),
-                                          thumbnail: item['thumbnail'] ?? '',
-                                          quantity: item['quantity'] ?? '',
-                                          category: item['category'] ?? '',
-                                          route: item['route'] ?? '',
-                                        );
-                                      }).toList();
-                                      if (products.length > 6) {
-                                        final result = [
-                                          Product(
-                                            id: -1,
-                                            name: '__VIEW_MORE__',
-                                            description: '',
-                                            urlName: '',
-                                            status: '',
-                                            price: '',
-                                            thumbnail: '',
-                                            quantity: '',
-                                            batch_no: '',
-                                            category: '',
-                                            route: '',
-                                          ),
-                                          ...products.take(6),
-                                        ];
-                                        print(
-                                            'TypeAhead suggestions (with View All): \\${result.map((e) => e.name).toList()}');
-                                        return result;
-                                      }
-                                      print(
-                                          'TypeAhead suggestions: \\${products.map((e) => e.name).toList()}');
-                                      return products;
-                                    }
-                                    return [];
-                                  } catch (e) {
-                                    print('Search API error: $e');
-                                    return [];
-                                  }
-                                },
-                                itemBuilder: (context, Product suggestion) {
-                                  if (suggestion.name == '__VIEW_MORE__') {
-                                    return Container(
-                                      color: Colors.green.withOpacity(0.08),
-                                      child: ListTile(
-                                        leading: Icon(Icons.list,
-                                            color: Colors.green[700]),
-                                        title: Text(
-                                          'View All Results',
-                                          style: TextStyle(
-                                            color: Colors.green[700],
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  final imageUrl =
-                                      getProductImageUrl(suggestion.thumbnail);
-                                  print(
-                                      'Search suggestion: \\${suggestion.name}, thumbnail: \\${suggestion.thumbnail}, imageUrl: \\${imageUrl}');
-                                  return ListTile(
-                                    leading: CachedNetworkImage(
-                                      imageUrl: imageUrl,
-                                      width: 40,
-                                      height: 40,
-                                      fit: BoxFit.cover,
-                                      placeholder: (context, url) => SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2),
-                                      ),
-                                      errorWidget: (context, url, error) =>
-                                          Icon(Icons.broken_image),
-                                    ),
-                                    title: Text(suggestion.name),
-                                    subtitle: Text('GHS ${suggestion.price}'),
-                                  );
-                                },
-                                onSuggestionSelected: (Product suggestion) {
-                                  final matchingProduct = products.firstWhere(
-                                    (p) =>
-                                        p.id == suggestion.id ||
-                                        p.name == suggestion.name,
-                                    orElse: () => suggestion,
-                                  );
-                                  final urlName =
-                                      matchingProduct.urlName.isNotEmpty
-                                          ? matchingProduct.urlName
-                                          : suggestion.urlName;
-                                  print(
-                                      'Navigating to item page with urlName: $urlName');
-                                  if (suggestion.name == '__VIEW_MORE__') {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => SearchResultsPage(
-                                          query: _searchController.text,
-                                          products: products,
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ItemPage(urlName: urlName),
-                                      ),
-                                    );
-                                  }
-                                },
-                                noItemsFoundBuilder: (context) => Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: Text('No products found',
-                                      style: TextStyle(color: Colors.grey)),
-                                ),
-                                hideOnEmpty: true,
-                                hideOnLoading: false,
-                                debounceDuration: Duration(milliseconds: 100),
-                                suggestionsBoxDecoration:
-                                    SuggestionsBoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                suggestionsBoxVerticalOffset: 0,
-                                suggestionsBoxController: null,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            height: 56,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 40),
-                                  child: SizedBox(
-                                    height: 110,
-                                    width: 100,
-                                    child: Image.asset(
-                                      'assets/images/png.png',
-                                      fit: BoxFit.fitWidth,
-                                    ),
+                                  padding: EdgeInsets.only(top: 5),
+                                  child: Image.asset(
+                                    'assets/images/png.png',
+                                    height: 56,
                                   ),
                                 ),
                               ],
                             ),
+                          ),
+                          SizedBox(
+                            height: 56,
+                            child: IconButton(
+                              icon: Icon(Icons.shopping_cart,
+                                  color: Colors.white),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const Cart(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
                 ),
@@ -1007,7 +838,20 @@ class _HomePageState extends State<HomePage> {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     if (index < 6) {
-                      return _buildProductCard(filteredProducts[index]);
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: 1),
+                        duration: Duration(milliseconds: 400 + index * 80),
+                        builder: (context, value, child) {
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, 30 * (1 - value)),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _buildProductCard(filteredProducts[index]),
+                      );
                     }
                     return SizedBox.shrink();
                   },
@@ -1063,7 +907,22 @@ class _HomePageState extends State<HomePage> {
                     int adjustedIndex = index + 6;
                     if (adjustedIndex < 12 &&
                         adjustedIndex < filteredProducts.length) {
-                      return _buildProductCard(filteredProducts[adjustedIndex]);
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: 1),
+                        duration:
+                            Duration(milliseconds: 400 + (index + 6) * 80),
+                        builder: (context, value, child) {
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, 30 * (1 - value)),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child:
+                            _buildProductCard(filteredProducts[adjustedIndex]),
+                      );
                     }
                     return SizedBox.shrink();
                   },
@@ -1121,7 +980,22 @@ class _HomePageState extends State<HomePage> {
                   (context, index) {
                     int adjustedIndex = index + 12;
                     if (adjustedIndex < filteredProducts.length) {
-                      return _buildProductCard(filteredProducts[adjustedIndex]);
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: 1),
+                        duration:
+                            Duration(milliseconds: 400 + (index + 12) * 80),
+                        builder: (context, value, child) {
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, 30 * (1 - value)),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child:
+                            _buildProductCard(filteredProducts[adjustedIndex]),
+                      );
                     }
                     return SizedBox.shrink();
                   },

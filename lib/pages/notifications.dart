@@ -7,6 +7,7 @@ import 'bottomnav.dart';
 import 'cart.dart';
 import 'homepage.dart';
 import 'AppBackButton.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -363,6 +364,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return WillPopScope(
       onWillPop: () async {
         if (Navigator.canPop(context)) {
@@ -371,19 +373,33 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Future.value(false);
       },
       child: Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.green[700],
-          elevation: 0,
-          centerTitle: true,
-          leading: AppBackButton(backgroundColor: Colors.transparent),
-          title: const Text(
+          backgroundColor:
+              theme.appBarTheme.backgroundColor ?? Colors.green[700],
+          elevation: theme.appBarTheme.elevation ?? 0,
+          centerTitle: theme.appBarTheme.centerTitle ?? true,
+          leading: AppBackButton(
+            backgroundColor: theme.primaryColor,
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              }
+            },
+          ),
+          title: Text(
             'Notifications',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+            style: theme.appBarTheme.titleTextStyle ??
+                const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
           ),
           actions: [
             Container(
@@ -418,52 +434,83 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ],
         ),
         body: isLoading
-            ? Center(child: CircularProgressIndicator(color: Colors.green[700]))
+            ? Center(
+                child: CircularProgressIndicator(color: theme.primaryColor))
             : groupedNotifications.isNotEmpty
                 ? ListView(
                     padding: const EdgeInsets.all(12.0),
                     children: [
-                      ...groupedNotifications.entries.map((entry) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 4.0, vertical: 8.0),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 30,
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      color: Colors.green[700],
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    entry.key,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[800],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            if (entry.value.isNotEmpty)
-                              ...entry.value
-                                  .asMap()
-                                  .entries
-                                  .map((notification) {
-                                int index = notification.key;
-                                return _buildNotificationTile(
-                                    entry.key, index, notification.value);
-                              }),
-                            const SizedBox(height: 16),
+                      ...groupedNotifications.entries
+                          .toList()
+                          .asMap()
+                          .entries
+                          .map((entryWithIndex) {
+                        int i = entryWithIndex.key;
+                        var entry = entryWithIndex.value;
+                        return Animate(
+                          effects: [
+                            FadeEffect(duration: 400.ms, delay: (i * 80).ms),
+                            SlideEffect(
+                                duration: 400.ms,
+                                begin: Offset(0, 0.1),
+                                end: Offset(0, 0),
+                                delay: (i * 80).ms),
                           ],
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4.0, vertical: 8.0),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 30,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: theme.primaryColor,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      entry.key,
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: theme
+                                                .textTheme.titleMedium?.color ??
+                                            Colors.grey[800],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              if (entry.value.isNotEmpty)
+                                ...entry.value
+                                    .asMap()
+                                    .entries
+                                    .map((notification) {
+                                  int index = notification.key;
+                                  return Animate(
+                                    effects: [
+                                      FadeEffect(
+                                          duration: 400.ms,
+                                          delay: (index * 60).ms),
+                                      SlideEffect(
+                                          duration: 400.ms,
+                                          begin: Offset(0, 0.1),
+                                          end: Offset(0, 0),
+                                          delay: (index * 60).ms),
+                                    ],
+                                    child: _buildNotificationTile(
+                                        entry.key, index, notification.value),
+                                  );
+                                }),
+                              const SizedBox(height: 16),
+                            ],
+                          ),
                         );
                       }),
                     ],
@@ -477,8 +524,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         const SizedBox(height: 16),
                         Text(
                           "No notifications yet",
-                          style: TextStyle(
-                            fontSize: 18,
+                          style: theme.textTheme.titleMedium?.copyWith(
                             color: Colors.grey[600],
                             fontWeight: FontWeight.w500,
                           ),
@@ -486,8 +532,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         const SizedBox(height: 8),
                         Text(
                           "When you receive notifications, they'll appear here",
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[500],
                           ),
                         ),
@@ -503,7 +548,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green[700],
+                            backgroundColor: theme.primaryColor,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 24, vertical: 12),
                             shape: RoundedRectangleBorder(

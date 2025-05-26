@@ -52,6 +52,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       password,
       phoneNumber,
     );
+    print('SignUp result: ' + signUpSuccess.toString());
 
     if (signUpSuccess) {
       Navigator.pushReplacement(

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'Cart.dart';
 import 'bottomnav.dart';
 import 'AppBackButton.dart';
+import 'HomePage.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class StoreSelectionPage extends StatefulWidget {
   const StoreSelectionPage({super.key});
@@ -49,17 +51,30 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
         return Future.value(false);
       },
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.green.shade700,
           elevation: 0,
           centerTitle: true,
-          leading: AppBackButton(),
+          leading: AppBackButton(
+            backgroundColor: Colors.green[600] ?? Colors.green,
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              }
+            },
+          ),
           title: Text(
             'Store Locations',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: Colors.white,
             ),
           ),
           actions: [
@@ -83,87 +98,165 @@ class _StoreSelectionPageState extends State<StoreSelectionPage> {
             ),
           ],
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Select Region or City:',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  fontFamily: 'Roboto',
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.green.shade100,
+                Colors.green.shade50,
+                Colors.white,
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Select Region or City:',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade900,
+                    fontFamily: 'Roboto',
+                  ),
                 ),
-              ),
-              SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButton<String>(
-                      value: selectedRegion,
-                      hint: Text('Select Region'),
-                      isExpanded: true,
-                      icon: Icon(Icons.arrow_downward, color: Colors.green),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          selectedRegion = newValue;
-                          selectedCity = null;
-                        });
-                      },
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontFamily: 'Roboto',
-                        fontWeight: FontWeight.w500,
-                      ),
-                      items: regions.map((String region) {
-                        return DropdownMenuItem<String>(
-                          value: region,
-                          child: Text(region),
-                        );
-                      }).toList(),
+                SizedBox(height: 20),
+                Card(
+                  elevation: 6,
+                  margin: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: selectedRegion,
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(Icons.map, color: Colors.green),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              labelText: 'Region',
+                              labelStyle: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 15),
+                              hintStyle: TextStyle(
+                                  color: Colors.grey[600], fontSize: 15),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: EdgeInsets.symmetric(
+                                  vertical: 14, horizontal: 12),
+                            ),
+                            hint:
+                                Text(' Region', style: TextStyle(fontSize: 15)),
+                            isExpanded: true,
+                            icon: Icon(Icons.arrow_drop_down,
+                                color: Colors.green),
+                            menuMaxHeight: 250,
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                selectedRegion = newValue;
+                                selectedCity = null;
+                              });
+                            },
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontFamily: 'Roboto',
+                              fontWeight: FontWeight.w500,
+                              fontSize: 15,
+                            ),
+                            items: regions.map((String region) {
+                              return DropdownMenuItem<String>(
+                                value: region,
+                                child: Text(region,
+                                    style: TextStyle(
+                                        color: Colors.black, fontSize: 15)),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        SizedBox(width: 5),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: selectedCity,
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(Icons.location_city,
+                                  color: Colors.green),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              labelText: 'City',
+                              labelStyle: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 15),
+                              hintStyle: TextStyle(
+                                  color: Colors.grey[600], fontSize: 15),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: EdgeInsets.symmetric(
+                                  vertical: 14, horizontal: 12),
+                            ),
+                            hint: Text(' City', style: TextStyle(fontSize: 15)),
+                            isExpanded: true,
+                            icon: Icon(Icons.arrow_drop_down,
+                                color: Colors.green),
+                            menuMaxHeight: 250,
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                selectedCity = newValue;
+                                selectedRegion = cities
+                                    .firstWhere((city) => city.name == newValue)
+                                    .region;
+                              });
+                            },
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontFamily: 'Roboto',
+                              fontWeight: FontWeight.w500,
+                              fontSize: 15,
+                            ),
+                            items: cities
+                                .map((City city) => DropdownMenuItem<String>(
+                                      value: city.name,
+                                      child: Text(city.name,
+                                          style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 15)),
+                                    ))
+                                .toList(),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButton<String>(
-                      value: selectedCity,
-                      hint: Text('Select City'),
-                      isExpanded: true,
-                      icon: Icon(Icons.arrow_downward, color: Colors.green),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          selectedCity = newValue;
-                          selectedRegion = cities
-                              .firstWhere((city) => city.name == newValue)
-                              .region;
-                        });
-                      },
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontFamily: 'Roboto',
-                        fontWeight: FontWeight.w500,
-                      ),
-                      items: cities
-                          .map((City city) => DropdownMenuItem<String>(
-                                value: city.name,
-                                child: Text(city.name),
-                              ))
+                ),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: Duration(milliseconds: 350),
+                    child: ListView(
+                      key: ValueKey(
+                          '${selectedRegion ?? ''}-${selectedCity ?? ''}'),
+                      padding: EdgeInsets.zero,
+                      children: _getFilteredStores()
+                          .map((store) => StoreListItem(store: store))
                           .toList(),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView(
-                  children: _getFilteredStores()
-                      .map((store) => StoreListItem(store: store))
-                      .toList(),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         bottomNavigationBar: const CustomBottomNav(),
@@ -205,15 +298,51 @@ class StoreListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
-      elevation: 6,
+      elevation: 8,
       child: ListTile(
-        title: Text(store.name, style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(store.city),
-        trailing: Icon(Icons.store, color: Colors.green),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        leading: CircleAvatar(
+          backgroundColor: Colors.green.shade100,
+          radius: 26,
+          child: Icon(Icons.store, color: Colors.green.shade700, size: 30),
+        ),
+        title: Text(
+          store.name,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Colors.green.shade900,
+          ),
+        ),
+        subtitle: Row(
+          children: [
+            Icon(Icons.location_on, color: Colors.green.shade400, size: 18),
+            SizedBox(width: 4),
+            Text(
+              store.city,
+              style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+            ),
+          ],
+        ),
+        trailing: Icon(Icons.arrow_forward_ios,
+            color: Colors.green.shade400, size: 20),
+        onTap: () async {
+          final query = Uri.encodeComponent(store.city + ", " + store.region);
+          final googleMapsUrl =
+              'https://www.google.com/maps/search/?api=1&query=$query';
+          if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
+            await launchUrl(Uri.parse(googleMapsUrl),
+                mode: LaunchMode.externalApplication);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not open the map.')),
+            );
+          }
+        },
       ),
     );
   }

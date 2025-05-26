@@ -7,6 +7,7 @@ import 'homepage.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'AppBackButton.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class PrescriptionUploadPage extends StatefulWidget {
   const PrescriptionUploadPage({super.key});
@@ -140,19 +141,33 @@ class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green.shade700,
-        elevation: 0,
-        centerTitle: true,
-        leading: AppBackButton(),
+        backgroundColor:
+            theme.appBarTheme.backgroundColor ?? Colors.green.shade700,
+        elevation: theme.appBarTheme.elevation ?? 0,
+        centerTitle: theme.appBarTheme.centerTitle ?? true,
+        leading: AppBackButton(
+          backgroundColor: theme.primaryColor,
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          },
+        ),
         title: Column(
           children: [
             Text(
               'Upload Prescription',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+              style: theme.appBarTheme.titleTextStyle ??
+                  TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
             ),
             Text(
               'Get your medicines delivered',
@@ -165,16 +180,9 @@ class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
           ],
         ),
         actions: [
-          Container(
-            margin: EdgeInsets.only(right: 8.0),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.green[700],
-            ),
-            child: IconButton(
-              icon: Icon(Icons.shopping_cart, color: Colors.white),
-              onPressed: () {},
-            ),
+          IconButton(
+            icon: Icon(Icons.shopping_cart, color: Colors.white),
+            onPressed: () {},
           ),
         ],
       ),
@@ -186,17 +194,72 @@ class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildUploadArea(theme),
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 400.ms),
+                      SlideEffect(
+                          duration: 400.ms,
+                          begin: Offset(0, 0.1),
+                          end: Offset(0, 0))
+                    ],
+                    child: _buildUploadArea(theme),
+                  ),
                   const SizedBox(height: 18),
-                  if (_selectedImages.isNotEmpty) _buildImagePreviewList(),
+                  if (_selectedImages.isNotEmpty)
+                    Animate(
+                      effects: [
+                        FadeEffect(duration: 400.ms),
+                        SlideEffect(
+                            duration: 400.ms,
+                            begin: Offset(0, 0.1),
+                            end: Offset(0, 0))
+                      ],
+                      child: _buildImagePreviewList(),
+                    ),
                   const SizedBox(height: 18),
-                  _buildSubmitButton(),
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 400.ms),
+                      SlideEffect(
+                          duration: 400.ms,
+                          begin: Offset(0, 0.1),
+                          end: Offset(0, 0))
+                    ],
+                    child: _buildSubmitButton(),
+                  ),
                   const SizedBox(height: 24),
-                  _buildRequirementsCard(),
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 400.ms),
+                      SlideEffect(
+                          duration: 400.ms,
+                          begin: Offset(0, 0.1),
+                          end: Offset(0, 0))
+                    ],
+                    child: _buildRequirementsCard(),
+                  ),
                   const SizedBox(height: 16),
-                  _buildSamplePrescriptionCard(),
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 400.ms),
+                      SlideEffect(
+                          duration: 400.ms,
+                          begin: Offset(0, 0.1),
+                          end: Offset(0, 0))
+                    ],
+                    child: _buildSamplePrescriptionCard(),
+                  ),
                   const SizedBox(height: 16),
-                  _buildWarningCard(),
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 400.ms),
+                      SlideEffect(
+                          duration: 400.ms,
+                          begin: Offset(0, 0.1),
+                          end: Offset(0, 0))
+                    ],
+                    child: _buildWarningCard(),
+                  ),
                 ],
               ),
             ),
@@ -205,12 +268,12 @@ class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
             Container(
               color: Colors.black.withOpacity(0.2),
               child: Center(
-                child: CircularProgressIndicator(color: Colors.green.shade700),
+                child: CircularProgressIndicator(color: theme.primaryColor),
               ),
             ),
         ],
       ),
-      backgroundColor: Colors.green.shade50,
+      backgroundColor: theme.scaffoldBackgroundColor ?? Colors.green.shade50,
     );
   }
 
@@ -354,31 +417,41 @@ class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
   }
 
   Widget _buildSubmitButton() {
+    final isEnabled = _selectedImages.isNotEmpty && !_isLoading;
+    final gradient = isEnabled
+        ? LinearGradient(
+            colors: [Colors.green.shade600, Colors.green.shade800],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          )
+        : LinearGradient(
+            colors: [Colors.grey.shade400, Colors.grey.shade500],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+    final iconColor = isEnabled ? Colors.white : Colors.grey.shade300;
+    final textColor = isEnabled ? Colors.white : Colors.grey.shade300;
     return SizedBox(
       width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green.shade600, Colors.green.shade800],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: gradient,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.green.withOpacity(0.18),
+              color: isEnabled
+                  ? Colors.green.withOpacity(0.18)
+                  : Colors.grey.withOpacity(0.10),
               blurRadius: 12,
               offset: Offset(0, 6),
             ),
           ],
         ),
         child: ElevatedButton.icon(
-          onPressed: (_selectedImages.isEmpty || _isLoading)
-              ? null
-              : _submitPrescription,
+          onPressed: isEnabled ? _submitPrescription : null,
           icon: FaIcon(
             FontAwesomeIcons.whatsapp,
-            color: Colors.white,
+            color: iconColor,
             size: 28,
           ),
           label: Padding(
@@ -388,7 +461,7 @@ class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: textColor,
                 letterSpacing: 0.5,
               ),
             ),
@@ -396,7 +469,7 @@ class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            foregroundColor: Colors.white,
+            foregroundColor: textColor,
             padding: EdgeInsets.symmetric(vertical: 20, horizontal: 24),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -405,7 +478,7 @@ class _PrescriptionUploadPageState extends State<PrescriptionUploadPage> {
           ).copyWith(
             overlayColor: MaterialStateProperty.resolveWith<Color?>(
               (Set<MaterialState> states) {
-                if (states.contains(MaterialState.pressed)) {
+                if (states.contains(MaterialState.pressed) && isEnabled) {
                   return Colors.green.shade900.withOpacity(0.18);
                 }
                 return null;

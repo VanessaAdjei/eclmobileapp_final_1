@@ -174,31 +174,32 @@ class _ProfileState extends State<Profile> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: AppBackButton(),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        elevation: Theme.of(context).appBarTheme.elevation,
+        centerTitle: Theme.of(context).appBarTheme.centerTitle,
+        leading: AppBackButton(
+          backgroundColor: Theme.of(context).primaryColor,
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          },
+        ),
         title: Text(
           'Your Profile',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: Theme.of(context).appBarTheme.titleTextStyle,
         ),
         actions: [
-          Container(
-            margin: EdgeInsets.only(right: 8.0),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.2),
-            ),
-            child: IconButton(
-              icon: Icon(Icons.shopping_cart, color: Colors.white),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const Cart()),
-              ),
+          IconButton(
+            icon: Icon(Icons.shopping_cart, color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const Cart()),
             ),
           ),
         ],

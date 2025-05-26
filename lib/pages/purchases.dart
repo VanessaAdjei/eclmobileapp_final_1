@@ -1,13 +1,17 @@
+// pages/purchases.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'Cart.dart';
 import 'CartItem.dart';
 import 'bottomnav.dart';
 import 'cartprovider.dart';
-
+import 'AppBackButton.dart';
+import 'HomePage.dart';
+import 'auth_service.dart';
 
 class PurchaseScreen extends StatefulWidget {
   const PurchaseScreen({super.key});
@@ -18,12 +22,70 @@ class PurchaseScreen extends StatefulWidget {
 
 class _PurchaseScreenState extends State<PurchaseScreen> {
   bool _isGridView = false;
+  bool _isLoading = true;
+  String? _error;
+  List<dynamic> _orders = [];
 
-  Widget _buildProductCard(CartItem cartItem) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchOrders();
+  }
+
+  Future<void> _fetchOrders() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final result = await AuthService.getOrders();
+
+      if (result['success']) {
+        setState(() {
+          _orders = result['orders'];
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = result['message'] ?? 'Failed to load orders';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'An error occurred while loading orders';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String getImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/uploads/')) {
+      return 'https://adm-ecommerce.ernestchemists.com.gh$url';
+    }
+    if (url.startsWith('/storage/')) {
+      return 'https://eclcommerce.ernestchemists.com.gh$url';
+    }
+    return 'https://adm-ecommerce.ernestchemists.com.gh/uploads/product/$url';
+  }
+
+  Widget _buildOrderCard(dynamic order) {
+    final orderDate = DateTime.tryParse(order['created_at'] ?? '');
+    final items = order['items'] as List? ?? [];
+    final total = order['total'] ?? 0.0;
+    final status = order['status'] ?? 'Processing';
+
     return Animate(
       effects: [
         FadeEffect(duration: 300.ms),
-        ScaleEffect(duration: 300.ms, begin: const Offset(0.9, 0.9), end: const Offset(1, 1))
+        ScaleEffect(
+          duration: 300.ms,
+          begin: const Offset(0.9, 0.9),
+          end: const Offset(1, 1),
+        ),
       ],
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -35,184 +97,129 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
               color: Colors.black12,
               blurRadius: 10,
               offset: Offset(0, 5),
-            )
+            ),
           ],
         ),
-        child: _buildListCard(cartItem),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Order header
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Order #${order['id']}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(status),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Order items
+            ...items.map((item) => _buildOrderItem(item)).toList(),
+
+            // Order footer
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    orderDate != null
+                        ? DateFormat('MMM dd, yyyy').format(orderDate)
+                        : 'Date unavailable',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'Total: GH₵ ${total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.green[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildGridCard(CartItem cartItem) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Image Section
-        Expanded(
-          flex: 3,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              image: DecorationImage(
-                image: NetworkImage(cartItem.image),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'Qty: ${cartItem.quantity}',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Details Section
-        Expanded(
-          flex: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  cartItem.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green[700],
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${cartItem.price} GHS',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.teal[700],
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today,
-                            size: 14,
-                            color: Colors.grey[600]),
-                        SizedBox(width: 4),
-                        Text(
-                          cartItem.purchaseDate != null
-                              ? DateFormat('dd MMM').format(cartItem.purchaseDate!)
-                              : 'N/A',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildListCard(CartItem cartItem) {
+  Widget _buildOrderItem(dynamic item) {
     return Padding(
-      padding: const EdgeInsets.all(12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
         children: [
-          // Image
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              image: DecorationImage(
-                image: NetworkImage(cartItem.image),
-                fit: BoxFit.cover,
+          // Product image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CachedNetworkImage(
+              imageUrl: getImageUrl(item['image'] ?? item['product_img']),
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: Colors.grey[200],
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    ),
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: Colors.grey[200],
+                child: Icon(Icons.error_outline, color: Colors.red),
               ),
             ),
           ),
+          SizedBox(width: 12),
 
-          // Details
+          // Product details
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    cartItem.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green[700],
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['name'] ?? item['product_name'] ?? 'Unknown Product',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Qty: ${item['quantity'] ?? item['qty'] ?? 1} × GH₵ ${(item['price'] ?? 0.0).toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 13,
                   ),
-                  SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${cartItem.price} GHS',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.teal[700],
-                        ),
-                      ),
-                      Text(
-                        'Qty: ${cartItem.quantity}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today,
-                          size: 14,
-                          color: Colors.grey[600]),
-                      SizedBox(width: 4),
-                      Text(
-                        cartItem.purchaseDate != null
-                            ? DateFormat('dd MMM yyyy').format(cartItem.purchaseDate!)
-                            : 'Purchase Date Unavailable',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -220,33 +227,50 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     );
   }
 
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'processing':
+        return Colors.blue;
+      case 'cancelled':
+        return Colors.red;
+      case 'pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cart = Provider.of<CartProvider>(context);
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: Colors.green,
-        elevation: 0,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        elevation: Theme.of(context).appBarTheme.elevation,
+        centerTitle: Theme.of(context).appBarTheme.centerTitle,
+        leading: AppBackButton(
+          backgroundColor: Theme.of(context).primaryColor,
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          },
+        ),
         title: Text(
-          'Your Purchases',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          'Your Orders',
+          style: Theme.of(context).appBarTheme.titleTextStyle,
         ),
         actions: [
           IconButton(
-            icon: Icon(
-              _isGridView ? Icons.list : Icons.grid_view,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                _isGridView = !_isGridView;
-              });
-            },
+            icon: Icon(Icons.refresh, color: Colors.white),
+            onPressed: _fetchOrders,
           ),
           IconButton(
             icon: Icon(Icons.shopping_cart, color: Colors.white),
@@ -259,64 +283,88 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
           ),
         ],
       ),
-      body: cart.purchasedItems.isEmpty
+      body: _isLoading
           ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.shopping_bag_outlined,
-              size: 100,
-              color: Colors.green[700],
-            ),
-            SizedBox(height: 20),
-            Text(
-              'No Purchases Yet',
-              style: TextStyle(
-                fontSize: 22,
-                color: Colors.green[700],
-                fontWeight: FontWeight.bold,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
               ),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Start shopping to see your purchases here',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      )
-          : Animate(
-        effects: [
-          FadeEffect(duration: 300.ms),
-        ],
-        child: _isGridView
-            ? GridView.builder(
-          padding: EdgeInsets.all(12),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: cart.purchasedItems.length,
-          itemBuilder: (context, index) {
-            final cartItem = cart.purchasedItems[index];
-            return _buildGridCard(cartItem);
-          },
-        )
-            : ListView.builder(
-          padding: EdgeInsets.all(12),
-          itemCount: cart.purchasedItems.length,
-          itemBuilder: (context, index) {
-            final cartItem = cart.purchasedItems[index];
-            return _buildProductCard(cartItem);
-          },
-        ),
-      ),
+            )
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 60,
+                        color: Colors.red,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Error Loading Orders',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _fetchOrders,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                        ),
+                        child: Text('Try Again'),
+                      ),
+                    ],
+                  ),
+                )
+              : _orders.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 100,
+                            color: Colors.green[700],
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            'No Orders Yet',
+                            style: TextStyle(
+                              fontSize: 22,
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Start shopping to see your orders here',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetchOrders,
+                      color: Colors.green,
+                      child: ListView.builder(
+                        padding: EdgeInsets.all(12),
+                        itemCount: _orders.length,
+                        itemBuilder: (context, index) {
+                          return _buildOrderCard(_orders[index]);
+                        },
+                      ),
+                    ),
       bottomNavigationBar: CustomBottomNav(),
     );
   }
