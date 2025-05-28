@@ -1,38 +1,18 @@
-// pages/payment_page.dart
+// pages/payment_2.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../services/expresspay_channel.dart';
+import '../services/expresspay_service.dart';
 import 'auth_service.dart';
 import 'bottomnav.dart';
 import 'cartprovider.dart';
 import 'homepage.dart';
 import 'AppBackButton.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter/services.dart';
-
-class ExpressPayChannel {
-  static const MethodChannel _channel =
-      MethodChannel('com.yourcompany.expresspay');
-
-  static Future<Map?> startExpressPay(Map<String, String> params) async {
-    try {
-      final result = await _channel.invokeMethod('startExpressPay', params);
-      if (result is String) {
-        // If the native side returns a JSON string, decode it
-        return Map<String, dynamic>.from(jsonDecode(result));
-      } else if (result is Map) {
-        return Map<String, dynamic>.from(result);
-      }
-      return null;
-    } on PlatformException catch (e) {
-      return {'success': false, 'message': e.message};
-    }
-  }
-}
+import '../services/expresspay_channel.dart';
 
 class PaymentPage extends StatefulWidget {
   const PaymentPage({super.key});
@@ -44,15 +24,12 @@ class PaymentPage extends StatefulWidget {
 class _PaymentPageState extends State<PaymentPage> {
   String selectedPaymentMethod = 'Online Payment';
   bool savePaymentMethod = false;
+  late ExpressPayApi expressPayApi;
   bool _isProcessingPayment = false;
   String _userName = "User";
   String _userEmail = "No email available";
   String _phoneNumber = "No phone number available";
   String? _paymentError;
-  // final hashedLink =  AuthService.getHashedLink();
-  String expressPaymentForm =
-      // 'https://eclcommerce.ernestchemists.com.gh/mobile-payment';
-      'https://sandbox.expresspaygh.com/api/sdk/php/server.php';
 
   final List<Map<String, dynamic>> paymentMethods = [
     {
@@ -79,6 +56,30 @@ class _PaymentPageState extends State<PaymentPage> {
       print("Email: $_userEmail");
       print("Phone: $_phoneNumber");
     });
+    expressPayApi = ExpressPayApi(
+      context,
+      "https://eclcommerce.ernestchemists.com.gh/mobile-payment",
+    );
+    expressPayApi.setPaymentCompletionListener(onExpressPayPaymentFinished);
+  }
+
+  void onExpressPayPaymentFinished(bool paymentCompleted, String message) {
+    setState(() {
+      _isProcessingPayment = false;
+    });
+
+    if (paymentCompleted) {
+      String? token = expressPayApi.getToken();
+      if (token != null) {
+        queryPayment(token);
+      }
+    } else {
+      debugPrint('expressPayDemo: $message');
+      setState(() {
+        _paymentError = 'Payment was not completed. $message';
+      });
+      _showPaymentFailureDialog(message);
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -153,9 +154,27 @@ class _PaymentPageState extends State<PaymentPage> {
   // }
 
   void queryPayment(String token) {
-    setState(() {
-      _paymentError = 'Query payment is not implemented in platform channel.';
+    expressPayApi
+        .setQueryCompletionListener((paymentSuccessful, jsonObject, message) {
+      if (paymentSuccessful) {
+        debugPrint('Payment Successful: Navigating to Order Confirmation');
+        Provider.of<CartProvider>(context, listen: false).clearCart();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const OrderConfirmationPage(),
+          ),
+          (route) => false,
+        );
+      } else {
+        debugPrint('expressPayDemo: $message');
+        setState(() {
+          _paymentError = 'Payment verification failed: $message';
+        });
+        _showPaymentFailureDialog('Payment verification failed: $message');
+      }
     });
+    expressPayApi.query(token);
   }
 
   Future<void> processPayment(CartProvider cart) async {
@@ -183,8 +202,6 @@ class _PaymentPageState extends State<PaymentPage> {
     final firstName = nameParts.isNotEmpty ? nameParts.first : '';
     final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
-    print('DEBUG: _phoneNumber before payment: $_phoneNumber');
-
     final params = {
       'request': 'submit',
       'order_id': 'ORDER_${DateTime.now().millisecondsSinceEpoch}',
@@ -204,25 +221,23 @@ class _PaymentPageState extends State<PaymentPage> {
               : 'cod',
     };
 
-    print('DEBUG: params sent to ExpressPayChannel:');
-    print(params);
-
     try {
-      final result = await ExpressPayChannel.startExpressPay(params);
-      if (result != null && result['success'] == true) {
-        // Payment successful, handle as before
-        Provider.of<CartProvider>(context, listen: false).clearCart();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const OrderConfirmationPage(),
-          ),
-          (route) => false,
-        );
+      final response = await http.post(
+        Uri.parse("https://sandbox.expresspaygh.com/api/sdk/php/server.php"),
+        body: params,
+      );
+
+      print("ExpressPay Request: $params");
+      print("API Response: \\${response.body}");
+
+      final jsonResponse = jsonDecode(response.body);
+      final redirectUrl = jsonResponse['redirect-url'];
+
+      if (redirectUrl != null) {
+        await _launchCheckoutUrl(redirectUrl);
       } else {
-        final errorMsg = result != null && result['message'] != null
-            ? result['message']
-            : 'Payment failed';
+        final errorMsg =
+            jsonResponse['message'] ?? 'Payment failed (no redirect URL)';
         setState(() {
           _paymentError = 'Error: $errorMsg';
         });
@@ -230,11 +245,22 @@ class _PaymentPageState extends State<PaymentPage> {
       }
     } catch (e) {
       setState(() {
-        _paymentError = 'Payment Error: ${e.toString()}';
+        _paymentError = 'Payment Error: \\${e.toString()}';
       });
       _showPaymentFailureDialog(e.toString());
     } finally {
       setState(() => _isProcessingPayment = false);
+    }
+  }
+
+  Future<void> _launchCheckoutUrl(String url) async {
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      setState(() {
+        _paymentError = 'Could not launch payment page';
+      });
+      throw 'Could not launch $url';
     }
   }
 

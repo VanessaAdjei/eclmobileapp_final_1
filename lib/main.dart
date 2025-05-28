@@ -14,6 +14,7 @@ import 'package:eclapp/pages/settings.dart';
 import 'package:provider/provider.dart';
 import 'pages/cartprovider.dart';
 import 'pages/theme_provider.dart';
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _isLoggedIn = false;
+  Timer? _cartSyncTimer;
 
   Future<void> _refreshAuthState() async {
     final isLoggedIn = await AuthService.isLoggedIn();
@@ -52,6 +54,25 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _refreshAuthState();
+    // Global cart refresh every minute
+    _cartSyncTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      final context = this.context;
+      if (mounted) {
+        try {
+          final cartProvider =
+              Provider.of<CartProvider>(context, listen: false);
+          cartProvider.syncWithApi();
+        } catch (e) {
+          debugPrint('Global cart sync error: $e');
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _cartSyncTimer?.cancel();
+    super.dispose();
   }
 
   @override

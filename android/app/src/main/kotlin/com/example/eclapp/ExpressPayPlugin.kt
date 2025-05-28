@@ -1,5 +1,5 @@
-
-
+// COMMENTED OUT TO DISABLE expressPay SDK INTEGRATION
+/*
 package com.example.eclapp
 
 import android.app.Activity
@@ -261,3 +261,4 @@ class ExpressPayPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, PluginR
         return false
     }
 }
+*/
