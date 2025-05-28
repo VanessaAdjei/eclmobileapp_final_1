@@ -102,13 +102,18 @@ class CartProvider with ChangeNotifier {
 
     _currentUserId ??= await AuthService.getCurrentUserID();
 
+    // Always use product_id as the unique identifier for cart items
+    // CartItem.id should always be set to product_id when creating CartItem
+    String uniqueId = item.id;
+
     int index =
-        _cartItems.indexWhere((existingItem) => existingItem.id == item.id);
+        _cartItems.indexWhere((existingItem) => existingItem.id == uniqueId);
     if (index != -1) {
       _cartItems[index]
           .updateQuantity(_cartItems[index].quantity + item.quantity);
     } else {
-      _cartItems.add(item);
+      // Ensure the CartItem uses the unique product_id as id
+      _cartItems.add(item.copyWith(id: uniqueId));
     }
 
     await _saveUserCarts();
@@ -125,28 +130,27 @@ class CartProvider with ChangeNotifier {
     final url =
         'https://eclcommerce.ernestchemists.com.gh/api/check-out/$hashedLink';
     final headers = {
-      'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
-    final payload = {
-      'product_id': item.id,
-      'quantity': item.quantity,
-      'price': item.price,
+    final queryParams = {
+      'product_id': item.id.toString(),
+      'quantity': item.quantity.toString(),
+      'price': item.price.toString(),
       'name': item.name,
       'image': item.image,
     };
 
-    debugPrint('POST $url');
-    debugPrint('Headers: $headers');
-    debugPrint('Body: ${jsonEncode(payload)}');
+    final uri = Uri.parse(url).replace(queryParameters: queryParams);
+
+    print('GET $uri');
+    print('Headers: $headers');
 
     try {
-      final response = await http.post(
-        Uri.parse(url),
+      final response = await http.get(
+        uri,
         headers: headers,
-        body: jsonEncode(payload),
       );
-      debugPrint('Add to cart API response status: ${response.statusCode}');
+      print('Add to cart API response status: ${response.statusCode}');
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         if (responseData['status'] == 'success' &&
@@ -170,7 +174,7 @@ class CartProvider with ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint('Add to cart error: $e');
+      print('Add to cart error: $e');
     }
   }
 
@@ -190,58 +194,53 @@ class CartProvider with ChangeNotifier {
     if (_currentUserId == null) return;
 
     final removedItem = _cartItems[index];
+    print(
+        'Attempting to remove cart item: id=${removedItem.id}, name=${removedItem.name}');
+    print('Current cart items before removal:');
+    for (var item in _cartItems) {
+      print('  id=${item.id}, name=${item.name}');
+    }
     _cartItems.removeAt(index);
     await _saveUserCarts();
     notifyListeners();
 
-    // Get hashed link for API endpoint
-    final hashedLink = await AuthService.getHashedLink();
     final token = await AuthService.getToken();
-    if (hashedLink == null) {
-      debugPrint(
-          'No hashed_link found for user. Cannot remove from cart on server.');
-      return;
-    }
-
-    final url = Uri.parse(
-            'https://eclcommerce.ernestchemists.com.gh/api/check-out/$hashedLink')
-        .replace(queryParameters: {'product_id': removedItem.id});
+    final url =
+        'https://eclcommerce.ernestchemists.com.gh/api/remove-from-cart';
     final headers = {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
+    print(
+        'Type of removedItem.id: \\${removedItem.id.runtimeType}, value: \\${removedItem.id}');
+    final payload = {
+      'cart_id': int.parse(removedItem.id),
+    };
+
+    print('POST $url');
+    print('Headers: $headers');
+    print('Body: ${jsonEncode(payload)}');
+
     try {
-      final response = await http.delete(
-        url,
+      final response = await http.post(
+        Uri.parse(url),
         headers: headers,
+        body: jsonEncode(payload),
       );
-      debugPrint(
-          'Remove from cart API response status: ${response.statusCode}');
+      print('Remove from cart API response status: ${response.statusCode}');
+      print('Remove from cart API response body: ${response.body}');
       if (response.statusCode == 200) {
-        try {
-          final responseData = jsonDecode(response.body);
-          if (responseData['status'] == 'success' &&
-              responseData['items'] != null) {
-            final serverItems = (responseData['items'] as List)
-                .map((item) => CartItem(
-                      id: item['product_id']?.toString() ??
-                          item['id']?.toString() ??
-                          '',
-                      name: item['product_name'] ?? item['name'] ?? '',
-                      price: (item['price'] is int || item['price'] is double)
-                          ? item['price'].toDouble()
-                          : double.tryParse(item['price'].toString()) ?? 0.0,
-                      image: item['product_img'] ?? item['image'] ?? '',
-                      quantity: item['qty'] ?? item['quantity'] ?? 1,
-                    ))
-                .toList();
-            _cartItems = serverItems;
-            await _saveUserCarts();
-            notifyListeners();
-          }
-        } catch (_) {}
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == 'success') {
+          // The item is already removed from _cartItems locally.
+          print('Item removed from cart successfully.');
+          await _saveUserCarts();
+          notifyListeners();
+        }
       }
-    } catch (_) {}
+    } catch (e) {
+      print('Remove from cart error: $e');
+    }
   }
 
   void updateQuantity(int index, int newQuantity) async {
@@ -402,15 +401,17 @@ class CartProvider with ChangeNotifier {
   }
 
   void setCartItems(List<CartItem> items) {
-    // Merge items with the same id by summing their quantities
+    // Merge items with the same product_id by summing their quantities
     final Map<String, CartItem> merged = {};
     for (final item in items) {
-      if (merged.containsKey(item.id)) {
-        merged[item.id] = merged[item.id]!.copyWith(
-          quantity: merged[item.id]!.quantity + item.quantity,
+      // Always use product_id as the unique identifier
+      final String uniqueId = item.id;
+      if (merged.containsKey(uniqueId)) {
+        merged[uniqueId] = merged[uniqueId]!.copyWith(
+          quantity: merged[uniqueId]!.quantity + item.quantity,
         );
       } else {
-        merged[item.id] = item;
+        merged[uniqueId] = item.copyWith(id: uniqueId);
       }
     }
     _cartItems = merged.values.toList();

@@ -21,7 +21,6 @@ class PurchaseScreen extends StatefulWidget {
 }
 
 class _PurchaseScreenState extends State<PurchaseScreen> {
-  bool _isGridView = false;
   bool _isLoading = true;
   String? _error;
   List<dynamic> _orders = [];
@@ -38,12 +37,10 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
         _isLoading = true;
         _error = null;
       });
-
       final result = await AuthService.getOrders();
-
-      if (result['success']) {
+      if (result['status'] == 'success' && result['data'] is List) {
         setState(() {
-          _orders = result['orders'];
+          _orders = result['data'];
           _isLoading = false;
         });
       } else {
@@ -72,161 +69,6 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     return 'https://adm-ecommerce.ernestchemists.com.gh/uploads/product/$url';
   }
 
-  Widget _buildOrderCard(dynamic order) {
-    final orderDate = DateTime.tryParse(order['created_at'] ?? '');
-    final items = order['items'] as List? ?? [];
-    final total = order['total'] ?? 0.0;
-    final status = order['status'] ?? 'Processing';
-
-    return Animate(
-      effects: [
-        FadeEffect(duration: 300.ms),
-        ScaleEffect(
-          duration: 300.ms,
-          begin: const Offset(0.9, 0.9),
-          end: const Offset(1, 1),
-        ),
-      ],
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Order header
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Order #${order['id']}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Order items
-            ...items.map((item) => _buildOrderItem(item)).toList(),
-
-            // Order footer
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    orderDate != null
-                        ? DateFormat('MMM dd, yyyy').format(orderDate)
-                        : 'Date unavailable',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    'Total: GH₵ ${total.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.green[700],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOrderItem(dynamic item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Row(
-        children: [
-          // Product image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: CachedNetworkImage(
-              imageUrl: getImageUrl(item['image'] ?? item['product_img']),
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: Colors.grey[200],
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                    ),
-                  ),
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: Colors.grey[200],
-                child: Icon(Icons.error_outline, color: Colors.red),
-              ),
-            ),
-          ),
-          SizedBox(width: 12),
-
-          // Product details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item['name'] ?? item['product_name'] ?? 'Unknown Product',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Qty: ${item['quantity'] ?? item['qty'] ?? 1} × GH₵ ${(item['price'] ?? 0.0).toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'completed':
@@ -242,16 +84,274 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     }
   }
 
+  void _showFullImageDialog(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: InteractiveViewer(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[200],
+                  height: 300,
+                  width: 300,
+                  child: const Icon(Icons.error_outline,
+                      color: Colors.red, size: 60),
+                ),
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[200],
+                  height: 300,
+                  width: 300,
+                  child: const Center(
+                    child: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: CircularProgressIndicator(strokeWidth: 3),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOrderCard(dynamic order) {
+    final orderDate = DateTime.tryParse(order['created_at'] ?? '');
+    final productName = order['product_name'] ?? 'Unknown Product';
+    final productImg = getImageUrl(order['product_img']);
+    final qty = order['qty'] ?? 1;
+    final price = order['price'] ?? 0.0;
+    final total = order['total_price'] ?? 0.0;
+    final status = order['status'] ?? 'Processing';
+
+    return Card(
+      elevation: 6,
+      margin: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 16, color: Colors.grey[500]),
+                const SizedBox(width: 4),
+                Text(
+                  orderDate != null
+                      ? DateFormat('MMM dd, yyyy').format(orderDate)
+                      : 'Date unavailable',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(status),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    status,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => _showFullImageDialog(productImg),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: CachedNetworkImage(
+                      imageUrl: productImg,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[200],
+                        child:
+                            const Icon(Icons.error_outline, color: Colors.red),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        productName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 15),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Qty: $qty',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'GHS ${price.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 28, thickness: 1.1),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Total: GHS ${total.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.shopping_bag_outlined,
+              size: 100,
+              color: Colors.green[200],
+            ),
+            const SizedBox(height: 30),
+            Text(
+              'No Orders Yet',
+              style: TextStyle(
+                fontSize: 24,
+                color: Colors.green[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Start shopping to see your orders here',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Shop Now', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 80, color: Colors.red),
+            const SizedBox(height: 20),
+            const Text(
+              'Error Loading Orders',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _error ?? '',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _fetchOrders,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Try Again', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        elevation: Theme.of(context).appBarTheme.elevation,
-        centerTitle: Theme.of(context).appBarTheme.centerTitle,
+        backgroundColor:
+            theme.appBarTheme.backgroundColor ?? Colors.green.shade700,
+        elevation: theme.appBarTheme.elevation ?? 0,
+        centerTitle: theme.appBarTheme.centerTitle ?? true,
         leading: AppBackButton(
-          backgroundColor: Theme.of(context).primaryColor,
+          backgroundColor: theme.primaryColor,
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -265,103 +365,63 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
         ),
         title: Text(
           'Your Orders',
-          style: Theme.of(context).appBarTheme.titleTextStyle,
+          style: theme.appBarTheme.titleTextStyle ??
+              const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: _fetchOrders,
+            tooltip: 'Refresh',
           ),
           IconButton(
-            icon: Icon(Icons.shopping_cart, color: Colors.white),
+            icon: const Icon(Icons.shopping_cart, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const Cart()),
               );
             },
+            tooltip: 'Cart',
           ),
         ],
       ),
       body: _isLoading
-          ? Center(
+          ? const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
               ),
             )
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 60,
-                        color: Colors.red,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Error Loading Orders',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _fetchOrders,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                        ),
-                        child: Text('Try Again'),
-                      ),
-                    ],
-                  ),
-                )
+              ? _buildErrorState()
               : _orders.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.shopping_bag_outlined,
-                            size: 100,
-                            color: Colors.green[700],
-                          ),
-                          SizedBox(height: 20),
-                          Text(
-                            'No Orders Yet',
-                            style: TextStyle(
-                              fontSize: 22,
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            'Start shopping to see your orders here',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
+                  ? _buildEmptyState()
                   : RefreshIndicator(
                       onRefresh: _fetchOrders,
                       color: Colors.green,
-                      child: ListView.builder(
-                        padding: EdgeInsets.all(12),
-                        itemCount: _orders.length,
-                        itemBuilder: (context, index) {
-                          return _buildOrderCard(_orders[index]);
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          double screenWidth = constraints.maxWidth;
+                          double fontSize = screenWidth < 400
+                              ? 13
+                              : (screenWidth < 600 ? 15 : 17);
+                          double cardPadding = screenWidth < 400
+                              ? 10
+                              : (screenWidth < 600 ? 16 : 24);
+                          double imageSize = screenWidth < 400
+                              ? 48
+                              : (screenWidth < 600 ? 64 : 80);
+                          return ListView.builder(
+                            padding: const EdgeInsets.only(top: 16, bottom: 24),
+                            itemCount: _orders.length,
+                            itemBuilder: (context, index) {
+                              return _buildOrderCard(_orders[index]);
+                            },
+                          );
                         },
                       ),
                     ),

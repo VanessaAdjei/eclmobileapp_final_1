@@ -271,58 +271,84 @@ class _CategoryPageState extends State<CategoryPage> {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
-        childAspectRatio: 0.7,
-      ),
-      itemCount: _filteredCategories.length,
-      itemBuilder: (context, index) {
-        final category = _filteredCategories[index];
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: Duration(milliseconds: 400 + index * 80),
-          builder: (context, value, child) {
-            return Opacity(
-              opacity: value,
-              child: Transform.translate(
-                offset: Offset(0, 30 * (1 - value)),
-                child: child,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double screenWidth = constraints.maxWidth;
+        int crossAxisCount = 2;
+        if (screenWidth > 900) {
+          crossAxisCount = 4;
+        } else if (screenWidth > 600) {
+          crossAxisCount = 3;
+        }
+        // Calculate card height:width ratio (aspect ratio)
+        double cardWidth =
+            (screenWidth - (crossAxisCount + 1) * 8) / crossAxisCount;
+        double cardHeight = cardWidth + 40; // 40 for text and spacing
+        double aspectRatio = cardWidth / cardHeight;
+
+        // Responsive font size
+        double fontSize =
+            screenWidth < 400 ? 13 : (screenWidth < 600 ? 15 : 17);
+        double imageRadius = screenWidth < 400 ? 12 : 16;
+        double verticalSpacing = screenWidth < 400 ? 2 : 4;
+
+        return GridView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 12,
+            childAspectRatio: aspectRatio,
+          ),
+          itemCount: _filteredCategories.length,
+          itemBuilder: (context, index) {
+            final category = _filteredCategories[index];
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: Duration(milliseconds: 400 + index * 80),
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, 30 * (1 - value)),
+                    child: child,
+                  ),
+                );
+              },
+              child: CategoryGridItem(
+                categoryName: category['name'],
+                subcategories: _subcategoriesMap[category['id']] ?? [],
+                hasSubcategories: category['has_subcategories'],
+                imageUrl: _getCategoryImageUrl(category['image_url']),
+                onTap: () {
+                  if (category['has_subcategories']) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SubcategoryPage(
+                          categoryName: category['name'],
+                          categoryId: category['id'],
+                        ),
+                      ),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProductListPage(
+                          categoryName: category['name'],
+                          categoryId: category['id'],
+                        ),
+                      ),
+                    );
+                  }
+                },
+                fontSize: fontSize,
+                imageRadius: imageRadius,
+                verticalSpacing: verticalSpacing,
               ),
             );
           },
-          child: CategoryGridItem(
-            categoryName: category['name'],
-            subcategories: _subcategoriesMap[category['id']] ?? [],
-            hasSubcategories: category['has_subcategories'],
-            imageUrl: _getCategoryImageUrl(category['image_url']),
-            onTap: () {
-              if (category['has_subcategories']) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SubcategoryPage(
-                      categoryName: category['name'],
-                      categoryId: category['id'],
-                    ),
-                  ),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProductListPage(
-                      categoryName: category['name'],
-                      categoryId: category['id'],
-                    ),
-                  ),
-                );
-              }
-            },
-          ),
         );
       },
     );
@@ -360,6 +386,9 @@ class CategoryGridItem extends StatefulWidget {
   final bool hasSubcategories;
   final VoidCallback onTap;
   final String imageUrl;
+  final double fontSize;
+  final double imageRadius;
+  final double verticalSpacing;
 
   const CategoryGridItem({
     super.key,
@@ -368,6 +397,9 @@ class CategoryGridItem extends StatefulWidget {
     required this.subcategories,
     required this.onTap,
     required this.imageUrl,
+    this.fontSize = 15,
+    this.imageRadius = 16,
+    this.verticalSpacing = 4,
   });
 
   @override
@@ -384,36 +416,30 @@ class _CategoryGridItemState extends State<CategoryGridItem> {
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedScale(
-        scale: _isPressed ? 1.04 : 1.0,
-        duration: Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(_isPressed ? 0.18 : 0.10),
-                blurRadius: _isPressed ? 24 : 16,
-                offset: Offset(0, _isPressed ? 8 : 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedScale(
+            scale: _isPressed ? 0.96 : 1.0,
+            duration: Duration(milliseconds: 100),
+            curve: Curves.easeOut,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(widget.imageRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: Offset(0, 2),
                   ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(widget.imageRadius),
+                child: AspectRatio(
+                  aspectRatio: 1.0,
                   child: CachedNetworkImage(
                     imageUrl: widget.imageUrl,
-                    width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
                       color: Colors.grey.shade200,
@@ -439,51 +465,24 @@ class _CategoryGridItemState extends State<CategoryGridItem> {
                   ),
                 ),
               ),
-              SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                child: Text(
-                  widget.categoryName,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    widget.hasSubcategories
-                        ? Icons.folder
-                        : Icons.shopping_bag_outlined,
-                    size: 16,
-                    color: Colors.green.shade700,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    widget.hasSubcategories
-                        ? "View subcategories"
-                        : "Browse products",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-              SizedBox(height: 18),
-            ],
+            ),
           ),
-        ),
+          SizedBox(height: widget.verticalSpacing),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: Text(
+              widget.categoryName,
+              style: TextStyle(
+                fontSize: widget.fontSize,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }

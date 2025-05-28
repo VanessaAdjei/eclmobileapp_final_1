@@ -138,13 +138,18 @@ class _ProfileState extends State<Profile> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () {
-                Navigator.pop(context);
-                AuthService.logout().then((_) {
-                  Navigator.pushReplacement(
-                      context,
+              onPressed: () async {
+                Navigator.of(context, rootNavigator: true)
+                    .pop(); // Ensure dialog closes
+                await AuthService.logout();
+                Future.microtask(() {
+                  if (mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(
-                          builder: (context) => LoggedOutScreen()));
+                          builder: (context) => LoggedOutScreen()),
+                      (route) => false,
+                    );
+                  }
                 });
               },
               child: Text(

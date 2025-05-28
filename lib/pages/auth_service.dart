@@ -607,34 +607,6 @@ class AuthService {
     }
   }
 
-  static Future<void> protectedCartAction({
-    required BuildContext context,
-    required Product product,
-    required Function() onSuccess,
-  }) async {
-    final isAuth = await isLoggedIn();
-
-    if (isAuth) {
-      onSuccess();
-      return;
-    }
-
-    final currentRoute = ModalRoute.of(context)?.settings.name;
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SignInScreen(
-          returnTo: currentRoute,
-          onSuccess: () => onSuccess(),
-        ),
-      ),
-    );
-
-    if (result == true && context.mounted) {
-      onSuccess();
-    }
-  }
-
   static Future<Map<String, dynamic>> getServerCart() async {
     try {
       final token = await getToken();
@@ -797,7 +769,7 @@ class AuthService {
     try {
       final token = await getToken();
       if (token == null) {
-        return {'success': false, 'message': 'Not authenticated'};
+        return {'status': 'error', 'message': 'Not authenticated'};
       }
 
       final response = await http.get(
@@ -808,24 +780,18 @@ class AuthService {
         },
       );
 
-      debugPrint('Orders API response status: ${response.statusCode}');
-      debugPrint('Orders API response body: ${response.body}');
+      debugPrint('Orders API response status: \\${response.statusCode}');
+      debugPrint('Orders API response body: \\${response.body}');
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': true,
-          'orders': data['orders'] ?? data['data'] ?? [],
-        };
-      }
-      return {
-        'success': false,
-        'message': 'Failed to fetch orders: ${response.statusCode}',
-      };
+      final data = jsonDecode(response.body);
+      // Return the raw structure so the Purchases page can handle it
+      return data is Map<String, dynamic>
+          ? data
+          : {'status': 'error', 'message': 'Invalid response'};
     } catch (e) {
       debugPrint('Error fetching orders: $e');
       return {
-        'success': false,
+        'status': 'error',
         'message': 'Exception: $e',
       };
     }

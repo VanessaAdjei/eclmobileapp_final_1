@@ -620,106 +620,97 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildProductCard(Product product) {
+  Widget _buildProductCard(
+    Product product, {
+    double fontSize = 16,
+    double padding = 16,
+    double imageHeight = 120,
+  }) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
     double cardWidth = screenWidth * (screenWidth < 600 ? 0.45 : 0.60);
-    double cardHeight = screenHeight * (screenHeight < 800 ? 0.15 : 0.20);
-    double imageHeight = cardHeight * (cardHeight < 800 ? 0.5 : 1);
-    double fontSize = screenWidth * 0.032;
-    double paddingValue = screenWidth * 0.02;
 
-    return Container(
-      width: cardWidth,
-      height: cardHeight,
-      margin: EdgeInsets.all(screenWidth * 0.019),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ItemPage(urlName: product.urlName),
-            ),
-          );
-        },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              height: imageHeight,
-              padding: EdgeInsets.all(paddingValue * 0.01),
-              constraints: BoxConstraints(
-                maxHeight: imageHeight,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Card is only the image (square)
+        Container(
+          width: cardWidth,
+          margin: EdgeInsets.all(screenWidth * 0.019),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 10,
+                offset: Offset(0, 5),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                child: CachedNetworkImage(
-                  imageUrl: product.thumbnail,
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  errorWidget: (_, __, ___) => Container(
-                    color: Colors.grey[200],
-                    child: Center(
-                      child: Icon(Icons.broken_image, size: 30),
+            ],
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ItemPage(urlName: product.urlName),
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Container(
+                  color: Colors.grey[100],
+                  child: CachedNetworkImage(
+                    imageUrl: product.thumbnail,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: Icon(Icons.broken_image, size: 30),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: paddingValue * 0.8,
-                vertical: paddingValue * 0.3,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    height: cardHeight < 600 ? 30 : 50,
-                    child: Text(
-                      product.name,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: max(fontSize * 1.1, 12),
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                        height: 1.2,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'GHS ${product.price}',
-                    style: TextStyle(
-                      fontSize: max(fontSize * 0.95, 11),
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green[800],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 8),
+        // Name and price beneath the card
+        SizedBox(
+          width: cardWidth,
+          child: Column(
+            children: [
+              Text(
+                product.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'GHS ${product.price}',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[800],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -732,312 +723,342 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMainContent() {
-    return Stack(
-      children: [
-        SmartRefresher(
-          controller: _refreshController,
-          onRefresh: loadProducts,
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 56.0,
-                floating: false,
-                automaticallyImplyLeading: false,
-                pinned: true,
-                backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-                flexibleSpace: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return FlexibleSpaceBar(
-                      centerTitle: false,
-                      titlePadding: EdgeInsets.only(left: 16, bottom: 10),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            height: 56,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.only(top: 5),
-                                  child: Image.asset(
-                                    'assets/images/png.png',
-                                    height: 56,
-                                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double screenWidth = constraints.maxWidth;
+        int crossAxisCount = 2;
+        double aspectRatio = 1.2;
+        if (screenWidth > 900) {
+          crossAxisCount = 4;
+          aspectRatio = 1.1;
+        } else if (screenWidth > 600) {
+          crossAxisCount = 3;
+          aspectRatio = 1.15;
+        }
+        double cardFontSize =
+            screenWidth < 400 ? 12 : (screenWidth < 600 ? 14 : 16);
+        double cardPadding =
+            screenWidth < 400 ? 8 : (screenWidth < 600 ? 12 : 16);
+        double cardImageHeight =
+            screenWidth < 400 ? 60 : (screenWidth < 600 ? 90 : 120);
+        return Stack(
+          children: [
+            SmartRefresher(
+              controller: _refreshController,
+              onRefresh: loadProducts,
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  SliverAppBar(
+                    expandedHeight: 56.0,
+                    floating: false,
+                    automaticallyImplyLeading: false,
+                    pinned: true,
+                    backgroundColor:
+                        Theme.of(context).appBarTheme.backgroundColor,
+                    flexibleSpace: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return FlexibleSpaceBar(
+                          centerTitle: false,
+                          titlePadding: EdgeInsets.only(left: 16, bottom: 10),
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                height: 56,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.only(top: 5),
+                                      child: Image.asset(
+                                        'assets/images/png.png',
+                                        height: 56,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              SizedBox(
+                                height: 56,
+                                child: IconButton(
+                                  icon: Icon(Icons.shopping_cart,
+                                      color: Colors.white),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const Cart(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(
-                            height: 56,
-                            child: IconButton(
-                              icon: Icon(Icons.shopping_cart,
-                                  color: Colors.white),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const Cart(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 10.0, horizontal: 10.0),
-                  child: _buildSearchBar(),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: buildOrderMedicineCard(),
-              ),
-              SliverToBoxAdapter(
-                child: _buildActionCards(),
-              ),
-              SliverList(
-                delegate: SliverChildListDelegate(
-                  [
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 24,
-                            color: Colors.green,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Medicine',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.green[700],
-                              letterSpacing: 1.2,
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  ],
-                ),
-              ),
-              SliverGrid(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index < 6) {
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: 1),
-                        duration: Duration(milliseconds: 400 + index * 80),
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 30 * (1 - value)),
-                              child: child,
-                            ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10.0, horizontal: 10.0),
+                      child: _buildSearchBar(),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: buildOrderMedicineCard(),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _buildActionCards(),
+                  ),
+                  SliverList(
+                    delegate: SliverChildListDelegate(
+                      [
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 24,
+                                color: Colors.green,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Medicine',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.green[700],
+                                  letterSpacing: 1.2,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index < 6) {
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: 1),
+                            duration: Duration(milliseconds: 400 + index * 80),
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 30 * (1 - value)),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: _buildProductCard(filteredProducts[index],
+                                fontSize: cardFontSize,
+                                padding: cardPadding,
+                                imageHeight: cardImageHeight),
                           );
-                        },
-                        child: _buildProductCard(filteredProducts[index]),
-                      );
-                    }
-                    return SizedBox.shrink();
-                  },
-                  childCount:
-                      filteredProducts.length > 6 ? 6 : filteredProducts.length,
-                ),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 0,
-                  mainAxisSpacing: 0,
-                  childAspectRatio: 1.2,
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 1.0),
-                  child: ClickableImageButton(),
-                ),
-              ),
-              SliverList(
-                delegate: SliverChildListDelegate(
-                  [
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 24,
-                            color: Colors.green,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'First Aid',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.green[700],
-                              letterSpacing: 1.2,
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
+                        }
+                        return SizedBox.shrink();
+                      },
+                      childCount: filteredProducts.length > 6
+                          ? 6
+                          : filteredProducts.length,
                     ),
-                  ],
-                ),
-              ),
-              SliverGrid(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    int adjustedIndex = index + 6;
-                    if (adjustedIndex < 12 &&
-                        adjustedIndex < filteredProducts.length) {
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: 1),
-                        duration:
-                            Duration(milliseconds: 400 + (index + 6) * 80),
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 30 * (1 - value)),
-                              child: child,
-                            ),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 0,
+                      mainAxisSpacing: 0,
+                      childAspectRatio: 0.7,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 1.0),
+                      child: ClickableImageButton(),
+                    ),
+                  ),
+                  SliverList(
+                    delegate: SliverChildListDelegate(
+                      [
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 24,
+                                color: Colors.green,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'First Aid',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.green[700],
+                                  letterSpacing: 1.2,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        int adjustedIndex = index + 6;
+                        if (adjustedIndex < 12 &&
+                            adjustedIndex < filteredProducts.length) {
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: 1),
+                            duration:
+                                Duration(milliseconds: 400 + (index + 6) * 80),
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 30 * (1 - value)),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: _buildProductCard(
+                                filteredProducts[adjustedIndex],
+                                fontSize: cardFontSize,
+                                padding: cardPadding,
+                                imageHeight: cardImageHeight),
                           );
-                        },
-                        child:
-                            _buildProductCard(filteredProducts[adjustedIndex]),
-                      );
-                    }
-                    return SizedBox.shrink();
-                  },
-                  childCount: filteredProducts.length > 12
-                      ? 6
-                      : (filteredProducts.length > 6
-                          ? filteredProducts.length - 6
-                          : 0),
-                ),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 0,
-                  mainAxisSpacing: 0,
-                  childAspectRatio: 1.2,
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 1.0),
-                  child: _buildPopularProducts(),
-                ),
-              ),
-              SliverList(
-                delegate: SliverChildListDelegate(
-                  [
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 24,
-                            color: Colors.green,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Other Products',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.green[700],
-                              letterSpacing: 1.2,
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
+                        }
+                        return SizedBox.shrink();
+                      },
+                      childCount: filteredProducts.length > 12
+                          ? 6
+                          : (filteredProducts.length > 6
+                              ? filteredProducts.length - 6
+                              : 0),
                     ),
-                  ],
-                ),
-              ),
-              SliverGrid(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    int adjustedIndex = index + 12;
-                    if (adjustedIndex < filteredProducts.length) {
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: 1),
-                        duration:
-                            Duration(milliseconds: 400 + (index + 12) * 80),
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 30 * (1 - value)),
-                              child: child,
-                            ),
-                          );
-                        },
-                        child:
-                            _buildProductCard(filteredProducts[adjustedIndex]),
-                      );
-                    }
-                    return SizedBox.shrink();
-                  },
-                  childCount: filteredProducts.length > 12
-                      ? filteredProducts.length - 12
-                      : 0,
-                ),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 0,
-                  mainAxisSpacing: 0,
-                  childAspectRatio: 1.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (_isLoading)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 20,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 0,
+                      mainAxisSpacing: 0,
+                      childAspectRatio: 0.7,
                     ),
-                  ],
-                ),
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green[700]!),
-                ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 1.0),
+                      child: _buildPopularProducts(),
+                    ),
+                  ),
+                  SliverList(
+                    delegate: SliverChildListDelegate(
+                      [
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 24,
+                                color: Colors.green,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Other Products',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.green[700],
+                                  letterSpacing: 1.2,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SliverGrid(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      int adjustedIndex = index + 12;
+                      if (adjustedIndex < filteredProducts.length) {
+                        return TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: 1),
+                          duration:
+                              Duration(milliseconds: 400 + (index + 12) * 80),
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 30 * (1 - value)),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _buildProductCard(
+                              filteredProducts[adjustedIndex],
+                              fontSize: cardFontSize,
+                              padding: cardPadding,
+                              imageHeight: cardImageHeight),
+                        );
+                      }
+                      return SizedBox.shrink();
+                    },
+                        childCount: filteredProducts.length > 12
+                            ? filteredProducts.length - 12
+                            : 0),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 0,
+                      mainAxisSpacing: 0,
+                      childAspectRatio: 0.7,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-      ],
+            if (_isLoading)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 20,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: CircularProgressIndicator(
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.green[700]!),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -1094,7 +1115,7 @@ class _HomePageState extends State<HomePage> {
               itemCount: 4,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.8,
+                childAspectRatio: 0.7,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
               ),
@@ -1112,7 +1133,7 @@ class _HomePageState extends State<HomePage> {
               itemCount: 4,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.8,
+                childAspectRatio: 0.7,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
               ),
@@ -1151,7 +1172,7 @@ class _HomePageState extends State<HomePage> {
               itemCount: 4,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.8,
+                childAspectRatio: 0.7,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
               ),
@@ -1290,7 +1311,7 @@ class HomePageSkeleton extends StatelessWidget {
               ),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.8,
+                childAspectRatio: 0.7,
               ),
             ),
             SliverToBoxAdapter(
@@ -1310,7 +1331,7 @@ class HomePageSkeleton extends StatelessWidget {
               ),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.8,
+                childAspectRatio: 0.7,
               ),
             ),
             SliverToBoxAdapter(
@@ -1350,7 +1371,7 @@ class HomePageSkeleton extends StatelessWidget {
               ),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.8,
+                childAspectRatio: 0.7,
               ),
             ),
           ],

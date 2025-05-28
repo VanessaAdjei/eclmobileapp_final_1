@@ -20,7 +20,6 @@ class CartItem {
     DateTime?
         modifiedDate, // Renamed parameter to avoid initialization conflict
   }) {
-    // Initialize lastModified in the constructor body instead
     lastModified = modifiedDate ?? DateTime.now();
   }
 
@@ -31,7 +30,6 @@ class CartItem {
 
   double get totalPrice => price * quantity;
 
-  // Enhanced toJson to be more robust
   Map<String, dynamic> toJson() {
     try {
       return {
@@ -41,14 +39,12 @@ class CartItem {
         if (originalPrice != null) 'originalPrice': originalPrice,
         'quantity': quantity,
         'image': image,
-        // Handle potential null lastModified
         if (lastModified != null)
           'lastModified': lastModified!.toIso8601String(),
         if (purchaseDate != null)
           'purchaseDate': purchaseDate!.toIso8601String(),
       };
     } catch (e) {
-      // Fallback if any serialization fails
       print('Error in CartItem.toJson(): $e');
       return {
         'id': id,
@@ -61,13 +57,9 @@ class CartItem {
     }
   }
 
-  // Robust fromJson implementation
   factory CartItem.fromJson(Map<String, dynamic> json) {
-    // Ensure required fields have defaults
-    final String itemId = json['id']?.toString() ?? '0';
+    final String itemId = (json['id'] ?? json['product_id'] ?? '').toString();
     final String itemName = json['name']?.toString() ?? 'Unknown Item';
-
-    // Handle price conversion safely
     double itemPrice = 0.0;
     double? itemOriginalPrice;
     try {
@@ -79,8 +71,6 @@ class CartItem {
       } else if (rawPrice is String) {
         itemPrice = double.tryParse(rawPrice) ?? 0.0;
       }
-
-      // Handle original price if present
       final dynamic rawOriginalPrice = json['originalPrice'];
       if (rawOriginalPrice != null) {
         if (rawOriginalPrice is double) {
@@ -91,45 +81,30 @@ class CartItem {
           itemOriginalPrice = double.tryParse(rawOriginalPrice);
         }
       }
-    } catch (_) {
-      // Default to 0 if price parsing fails
-    }
-
-    // Parse quantity safely
+    } catch (_) {}
     int itemQuantity = 1;
     try {
-      final dynamic rawQuantity = json['quantity'];
+      final dynamic rawQuantity = json['quantity'] ?? json['qty'];
       if (rawQuantity is int) {
         itemQuantity = rawQuantity;
       } else if (rawQuantity is String) {
         itemQuantity = int.tryParse(rawQuantity) ?? 1;
       }
-      // Ensure quantity is at least 1
       if (itemQuantity < 1) itemQuantity = 1;
-    } catch (_) {
-      // Default to 1 if quantity parsing fails
-    }
-
-    // Handle image URL
+    } catch (_) {}
     final String itemImage = json['image']?.toString() ?? '';
-
-    // Parse lastModified with fallbacks
     DateTime? itemLastModified;
     try {
       final dynamic rawLastModified = json['lastModified'];
       if (rawLastModified is String && rawLastModified.isNotEmpty) {
         itemLastModified = DateTime.parse(rawLastModified);
       } else {
-        // Only set current time if lastModified was not in the JSON
         itemLastModified = DateTime.now();
       }
     } catch (e) {
       print('Error parsing lastModified: $e');
-      // Set current time on parsing failure
       itemLastModified = DateTime.now();
     }
-
-    // Parse optional purchaseDate
     DateTime? itemPurchaseDate;
     try {
       final dynamic rawPurchaseDate = json['purchaseDate'];
@@ -138,9 +113,7 @@ class CartItem {
       }
     } catch (e) {
       print('Error parsing purchaseDate: $e');
-      // Keep as null on parsing failure
     }
-
     return CartItem(
       id: itemId,
       name: itemName,
@@ -148,8 +121,7 @@ class CartItem {
       originalPrice: itemOriginalPrice,
       quantity: itemQuantity,
       image: itemImage,
-      modifiedDate:
-          itemLastModified, // Changed from lastModified to modifiedDate
+      modifiedDate: itemLastModified,
       purchaseDate: itemPurchaseDate,
     );
   }
