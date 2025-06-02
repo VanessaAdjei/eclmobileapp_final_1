@@ -81,8 +81,12 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
               _onItemTapped(context, '/categories');
               break;
             case 3:
+            if (!_userLoggedIn) {
+              Navigator.pushReplacementNamed(context, '/login');
+            } else {
               _onItemTapped(context, '/profile');
-              break;
+            }
+            break;
           }
         },
         items: [

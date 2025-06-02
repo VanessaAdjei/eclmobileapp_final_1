@@ -8,6 +8,7 @@ import 'cart.dart';
 import 'homepage.dart';
 import 'AppBackButton.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'auth_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -23,6 +24,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final loggedIn = await AuthService.isLoggedIn();
+    if (!loggedIn) {
+      Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
     _loadNotifications();
   }
 

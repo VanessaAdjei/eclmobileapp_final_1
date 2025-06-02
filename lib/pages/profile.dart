@@ -27,6 +27,14 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
+  Future<void> _checkLoginStatus() async {
+    final loggedIn = await AuthService.isLoggedIn();
+    if (!loggedIn) {
+      Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+  }
+
   void _navigateTo(Widget screen) {
     Navigator.push(
       context,
@@ -44,6 +52,7 @@ class _ProfileState extends State<Profile> {
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus();
     _loadUserData();
     _loadProfileImage();
   }
