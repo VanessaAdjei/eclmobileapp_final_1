@@ -48,15 +48,17 @@ class _ItemPageState extends State<ItemPage> {
 
   void _addToCart(BuildContext context, Product product) async {
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
-    cartProvider.addToCart(
-      CartItem(
-        id: product.id.toString(),
-        name: product.name,
-        price: double.tryParse(product.price) ?? 0.0,
-        image: product.thumbnail,
-        quantity: quantity, // Use the selected quantity
-      ),
+    final tempId = '${product.id}_${DateTime.now().millisecondsSinceEpoch}';
+    final cartItem = CartItem(
+      id: tempId,
+      productId: product.id.toString(),
+      name: product.name,
+      price: double.tryParse(product.price) ?? 0.0,
+      image: product.thumbnail,
+      quantity: quantity,
+      // modifiedDate: DateTime.now(),
     );
+    cartProvider.addToCart(cartItem);
     print('Attempting to add to cart: '
         'id: ${product.id}, name: ${product.name}, price: ${product.price}, quantity: ${quantity}');
     final backendResponse = await AuthService.addToCartCheckAuth(
@@ -69,9 +71,8 @@ class _ItemPageState extends State<ItemPage> {
     if (backendResponse['items'] != null) {
       final items = (backendResponse['items'] as List)
           .map((item) => CartItem(
-                id: item['product_id']?.toString() ??
-                    item['id']?.toString() ??
-                    '',
+                id: item['id']?.toString() ?? '', // This is the cart ID
+                productId: item['product_id']?.toString() ?? '', // This is the product ID
                 name: item['product_name'] ?? item['name'] ?? '',
                 price: (item['price'] is int || item['price'] is double)
                     ? item['price'].toDouble()

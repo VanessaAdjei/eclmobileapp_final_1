@@ -39,6 +39,13 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
+    
+    // Debug print statements
+    print('Cart ID: ${cart.cartItems.isNotEmpty ? cart.cartItems.first.id : 'No cart items'}'); // Using first cart item ID as cart ID
+    print('Product IDs in cart:');
+    for (var item in cart.cartItems) {
+      print('Product ID: ${item.id}');
+    }
 
     return Container(
       decoration: BoxDecoration(

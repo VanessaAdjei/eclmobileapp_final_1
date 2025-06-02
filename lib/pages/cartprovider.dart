@@ -16,6 +16,7 @@ class CartProvider with ChangeNotifier {
 
   List<CartItem> get cartItems => _cartItems;
   List<CartItem> get purchasedItems => _purchasedItems;
+  String? get currentUserId => _currentUserId;
 
   CartProvider() {
     _initializeCart();
@@ -94,6 +95,7 @@ class CartProvider with ChangeNotifier {
     }
   }
 
+// Updated addToCart method in CartProvider
   void addToCart(CartItem item) async {
     if (!await AuthService.isLoggedIn()) {
       debugPrint('User must be logged in to add items to cart');
@@ -102,80 +104,100 @@ class CartProvider with ChangeNotifier {
 
     _currentUserId ??= await AuthService.getCurrentUserID();
 
-    // Always use product_id as the unique identifier for cart items
-    // CartItem.id should always be set to product_id when creating CartItem
-    String uniqueId = item.id;
+    // Check if item already exists in cart (by productId)
+    final existingIndex = _cartItems.indexWhere(
+            (existingItem) => existingItem.productId == item.productId
+    );
 
-    int index =
-        _cartItems.indexWhere((existingItem) => existingItem.id == uniqueId);
-    if (index != -1) {
-      _cartItems[index]
-          .updateQuantity(_cartItems[index].quantity + item.quantity);
+    if (existingIndex != -1) {
+      // Item exists - update quantity
+      final existingItem = _cartItems[existingIndex];
+      final newQuantity = existingItem.quantity + item.quantity;
+
+      _cartItems[existingIndex] = existingItem.copyWith(
+        quantity: newQuantity,
+        lastModified: DateTime.now(),
+      );
+
+      debugPrint('Updated quantity for ${item.name} to $newQuantity');
     } else {
-      // Ensure the CartItem uses the unique product_id as id
-      _cartItems.add(item.copyWith(id: uniqueId));
+      // Item doesn't exist - add new item
+      final tempId = 'temp_${item.productId}_${DateTime.now().millisecondsSinceEpoch}';
+      final newItem = item.copyWith(
+        id: tempId,
+        lastModified: DateTime.now(),
+      );
+
+      _cartItems.add(newItem);
+      debugPrint('Added new item: ${item.name}');
     }
 
     await _saveUserCarts();
     notifyListeners();
 
+    // Sync with server
+    await _syncCartWithServer(item);
+  }
+
+// New helper method for server sync
+  Future<void> _syncCartWithServer(CartItem item) async {
     final hashedLink = await AuthService.getHashedLink();
     final token = await AuthService.getToken();
-    if (hashedLink == null) {
-      debugPrint(
-          'No hashed_link found for user. Cannot add to cart on server.');
+
+    if (hashedLink == null || token == null) {
+      debugPrint('Cannot sync cart - missing auth credentials');
       return;
     }
 
-    final url =
-        'https://eclcommerce.ernestchemists.com.gh/api/check-out/$hashedLink';
-    final headers = {
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-    final queryParams = {
-      'product_id': item.id.toString(),
-      'quantity': item.quantity.toString(),
-      'price': item.price.toString(),
-      'name': item.name,
-      'image': item.image,
-    };
-
-    final uri = Uri.parse(url).replace(queryParameters: queryParams);
-
-    print('GET $uri');
-    print('Headers: $headers');
-
     try {
-      final response = await http.get(
-        uri,
-        headers: headers,
+      final url = 'https://eclcommerce.ernestchemists.com.gh/api/check-out/$hashedLink';
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'product_id': item.productId,
+          'quantity': item.quantity,
+        }),
       );
-      print('Add to cart API response status: ${response.statusCode}');
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        if (responseData['status'] == 'success' &&
-            responseData['items'] != null) {
-          final serverItems = (responseData['items'] as List)
-              .map((item) => CartItem(
-                    id: item['product_id']?.toString() ??
-                        item['id']?.toString() ??
-                        '',
-                    name: item['product_name'] ?? item['name'] ?? '',
-                    price: (item['price'] is int || item['price'] is double)
-                        ? item['price'].toDouble()
-                        : double.tryParse(item['price'].toString()) ?? 0.0,
-                    image: item['product_img'] ?? item['image'] ?? '',
-                    quantity: item['qty'] ?? item['quantity'] ?? 1,
-                  ))
-              .toList();
-          _cartItems = serverItems;
-          await _saveUserCarts();
-          notifyListeners();
+        if (responseData['status'] == 'success' && responseData['items'] != null) {
+          await _updateLocalCartWithServerData(responseData['items']);
         }
+      } else {
+        debugPrint('Failed to sync cart with server: ${response.statusCode}');
       }
     } catch (e) {
-      print('Add to cart error: $e');
+      debugPrint('Error syncing cart with server: $e');
     }
+  }
+
+  Future<void> _updateLocalCartWithServerData(List<dynamic> serverItems) async {
+    final serverCartItems = serverItems.map((item) => CartItem.fromServerJson(item)).toList();
+
+    // Create map of server items by productId
+    final serverItemsMap = {for (var item in serverCartItems) item.productId: item};
+
+    // Update local cart
+    for (int i = 0; i < _cartItems.length; i++) {
+      final localItem = _cartItems[i];
+      final serverItem = serverItemsMap[localItem.productId];
+
+      if (serverItem != null) {
+        // Update local item with server ID and quantity
+        _cartItems[i] = localItem.copyWith(
+          id: serverItem.id,
+          quantity: serverItem.quantity,
+        );
+      }
+    }
+
+    await _saveUserCarts();
+    notifyListeners();
   }
 
   void purchaseItems() async {
@@ -194,8 +216,7 @@ class CartProvider with ChangeNotifier {
     if (_currentUserId == null) return;
 
     final removedItem = _cartItems[index];
-    print(
-        'Attempting to remove cart item: id=${removedItem.id}, name=${removedItem.name}');
+    print('Attempting to remove cart item: id=${removedItem.id}, name=${removedItem.name}');
     print('Current cart items before removal:');
     for (var item in _cartItems) {
       print('  id=${item.id}, name=${item.name}');
@@ -204,42 +225,67 @@ class CartProvider with ChangeNotifier {
     await _saveUserCarts();
     notifyListeners();
 
-    final token = await AuthService.getToken();
-    final url =
-        'https://eclcommerce.ernestchemists.com.gh/api/remove-from-cart';
-    final headers = {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-    print(
-        'Type of removedItem.id: \\${removedItem.id.runtimeType}, value: \\${removedItem.id}');
-    final payload = {
-      'cart_id': int.parse(removedItem.id),
-    };
-
-    print('POST $url');
-    print('Headers: $headers');
-    print('Body: ${jsonEncode(payload)}');
-
     try {
+      final token = await AuthService.getToken();
+      final url =
+          'https://eclcommerce.ernestchemists.com.gh/api/remove-from-cart';
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      // Get the cart ID - this should be the actual cart ID from the API
+      String cartId = removedItem.id;
+      print('Original cart ID: $cartId');
+
+      // If we still have a temporary ID, try to find the item with the same product ID
+      if (cartId.contains('_')) {
+        final productId = cartId.split('_')[0];
+        final existingItem = _cartItems.firstWhere(
+          (item) => item.productId == productId,
+          orElse: () => removedItem,
+        );
+        cartId = existingItem.id;
+        print('Updated cart ID from existing item: $cartId');
+      }
+
+      print('POST $url');
+      print('Headers: $headers');
+      print('Body: {"cart_id": "$cartId", "hashed_link": "..."}');
+      print('Removed item details:');
+      print('  Cart ID: $cartId');
+      print('  Product ID: ${removedItem.productId}');
+
       final response = await http.post(
         Uri.parse(url),
         headers: headers,
-        body: jsonEncode(payload),
+        body: jsonEncode({
+          'cart_id': cartId.toString(), // Ensure it's a string
+          'hashed_link': await AuthService.getHashedLink(),
+        }),
       );
+
+      print('API call payload: ${jsonEncode({
+        'cart_id': cartId.toString(),
+        'hashed_link': await AuthService.getHashedLink(),
+      })}');
       print('Remove from cart API response status: ${response.statusCode}');
       print('Remove from cart API response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         if (responseData['status'] == 'success') {
-          // The item is already removed from _cartItems locally.
-          print('Item removed from cart successfully.');
-          await _saveUserCarts();
-          notifyListeners();
+          debugPrint('Item removed from cart successfully');
+          await syncWithApi();
+        } else {
+          debugPrint('Failed to remove item from cart: ${responseData['message']}');
         }
+      } else {
+        debugPrint('Failed to remove item from cart. Status code: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
       }
     } catch (e) {
-      print('Remove from cart error: $e');
+      debugPrint('Error removing item from cart: $e');
     }
   }
 
@@ -318,17 +364,16 @@ class CartProvider with ChangeNotifier {
     }
     if (authResult['authenticated'] == true ||
         authResult['status'] == 'success') {
-      final apiItems = authResult['items'] as List?;
+      final apiItems = authResult['items'];
       print('apiItems: $apiItems');
       if (apiItems == null) {
         print('apiItems is null');
         return;
       }
-      final serverCart = apiItems
+      final serverItems = (apiItems as List<dynamic>)
           .map((item) => CartItem(
-                id: item['product_id']?.toString() ??
-                    item['id']?.toString() ??
-                    '',
+                id: item['id']?.toString() ?? '', // This is the cart ID
+                productId: item['product_id']?.toString() ?? '', // This is the product ID
                 name: item['product_name'] ?? item['name'] ?? '',
                 price: (item['price'] is int || item['price'] is double)
                     ? item['price'].toDouble()
@@ -343,7 +388,7 @@ class CartProvider with ChangeNotifier {
       for (final item in _cartItems) {
         merged[item.id] = item;
       }
-      for (final item in serverCart) {
+      for (final item in serverItems) {
         if (merged.containsKey(item.id)) {
           merged[item.id] = merged[item.id]!.copyWith(
             quantity: merged[item.id]!.quantity + item.quantity,
